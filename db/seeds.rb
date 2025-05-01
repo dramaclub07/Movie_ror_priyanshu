@@ -22,7 +22,7 @@ def seed_genres
     { name: 'Documentary' }
   ]
 
-  genres.each do |genre^
+  genres.each do |genre|
     Genre.find_or_create_by!(genre)
   end
 end
