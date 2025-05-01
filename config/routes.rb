@@ -1,10 +1,65 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
+  # Mount Rswag engines for API documentation
+  mount Rswag::Ui::Engine => '/api-docs'
+  mount Rswag::Api::Engine => '/api-docs'
 
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
+  devise_for :admin_users, ActiveAdmin::Devise.config
+  ActiveAdmin.routes(self)
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  namespace :api do
+    namespace :v1 do
+      # Auth routes
+      post 'auth/sign_up', to: 'auth#sign_up'
+      post 'auth/sign_in', to: 'auth#sign_in'
+      post 'auth/google', to: 'auth#google'
+      post 'auth/refresh_token', to: 'auth#refresh_token'
+      delete 'auth/sign_out', to: 'auth#sign_out'
+
+      # User routes
+      resources :users, only: %i[show update] do
+        collection do
+          get 'profile'
+          put 'update_profile'
+          patch 'update_profile'
+        end
+      end
+
+      # Movie routes
+      resources :movies do
+        collection do
+          get 'search'
+          get 'recommended'
+        end
+        member do
+          post 'rate'
+          delete 'remove_rating'
+        end
+      end
+      
+      # Genre routes
+      resources :genres
+
+      # Subscription routes
+      resources :subscriptions do
+        collection do
+          get 'active'
+          get 'history'
+        end
+      end
+
+      # Admin routes
+      namespace :admin do
+        resources :users, only: %i[index show update destroy]
+        resources :movies
+        resources :genres
+        resources :subscriptions, only: %i[index show]
+        get 'dashboard', to: 'dashboard#index'
+      end
+    end
+  end
+
+  # Catch-all route for React frontend - MUST be last
+  get '*path', to: 'application#index', constraints: lambda { |request|
+    !request.xhr? && request.format.html?
+  }
 end

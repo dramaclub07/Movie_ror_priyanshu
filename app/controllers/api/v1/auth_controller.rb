@@ -1,0 +1,208 @@
+module Api
+  module V1
+    class AuthController < ApplicationController
+      skip_before_action :authenticate_user!, only: %i[sign_up sign_in google refresh_token]
+
+      def sign_up
+        user = User.new(user_params)
+        if user.save
+          tokens = generate_auth_tokens(user.id)
+          store_auth_tokens(tokens, user)
+
+          render json: {
+            user: serialize_user(user),
+            message: 'User created successfully',
+            auth_info: auth_info(tokens)
+          }, status: :created
+        else
+          Rails.logger.error "User validation failed: #{user.errors.full_messages}"
+          render json: {
+            errors: user.errors.full_messages,
+            debug_info: {
+              params: user_params.to_h,
+              validation_errors: user.errors.details
+            }
+          }, status: :unprocessable_entity
+        end
+      rescue StandardError => e
+        Rails.logger.error "Sign up error: #{e.message}\n#{e.backtrace.join("\n")}"
+        render json: { error: 'Registration failed' }, status: :internal_server_error
+      end
+
+      def sign_in
+        user = User.find_by(email: params.dig(:user, :email) || params[:email])
+        if user&.valid_password?(params.dig(:user, :password) || params[:password])
+          tokens = generate_auth_tokens(user.id)
+          store_auth_tokens(tokens, user)
+
+          render json: {
+            user: serialize_user(user),
+            message: 'Logged in successfully',
+            auth_info: auth_info(tokens)
+          }
+        else
+          render json: { error: 'Invalid email or password' }, status: :unauthorized
+        end
+      rescue StandardError => e
+        Rails.logger.error "Sign in error: #{e.message}"
+        render json: { error: 'Login failed' }, status: :internal_server_error
+      end
+
+      def refresh_token
+        refresh_token = cookies[:refresh_token]
+        user = JwtService.verify_refresh_token(refresh_token)
+
+        if user
+          tokens = generate_auth_tokens(user.id)
+          store_auth_tokens(tokens, user)
+
+          render json: {
+            message: 'Tokens refreshed successfully',
+            auth_info: auth_info(tokens)
+          }
+        else
+          clear_auth_cookies
+          render json: { error: 'Invalid refresh token' }, status: :unauthorized
+        end
+      rescue StandardError => e
+        Rails.logger.error "Token refresh error: #{e.message}"
+        clear_auth_cookies
+        render json: { error: 'Token refresh failed' }, status: :internal_server_error
+      end
+
+      def sign_out
+        JwtService.invalidate_refresh_token(current_user.id) if current_user
+        clear_auth_cookies
+        render json: {
+          message: 'Successfully signed out',
+          auth_info: {
+            status: 'logged_out',
+            tokens_cleared: true
+          }
+        }
+      rescue StandardError => e
+        Rails.logger.error "Sign out error: #{e.message}"
+        render json: { error: 'Sign out failed' }, status: :internal_server_error
+      end
+
+      def google
+        return render json: { error: 'Access token is required' }, status: :unauthorized if params[:access_token].blank?
+
+        begin
+          client = OAuth2::Client.new(
+            ENV['GOOGLE_CLIENT_ID'],
+            ENV['GOOGLE_CLIENT_SECRET'],
+            authorize_url: 'https://accounts.google.com/o/oauth2/auth',
+            token_url: 'https://accounts.google.com/o/oauth2/token'
+          )
+
+          access_token = OAuth2::AccessToken.new(client, params[:access_token])
+          response = access_token.get('https://www.googleapis.com/oauth2/v3/userinfo')
+          user_info = JSON.parse(response.body)
+
+          user = User.from_omniauth(OpenStruct.new(
+                                      provider: 'google_oauth2',
+                                      uid: user_info['sub'],
+                                      info: OpenStruct.new(
+                                        email: user_info['email'],
+                                        name: user_info['name']
+                                      )
+                                    ))
+
+          tokens = generate_auth_tokens(user.id)
+          store_auth_tokens(tokens, user)
+
+          render json: {
+            user: serialize_user(user),
+            message: 'Successfully authenticated with Google',
+            auth_info: auth_info(tokens)
+          }
+        rescue OAuth2::Error => e
+          render json: { error: 'Invalid Google token' }, status: :unauthorized
+        rescue StandardError => e
+          Rails.logger.error "Google auth error: #{e.message}"
+          render json: { error: 'Authentication failed' }, status: :internal_server_error
+        end
+      end
+
+      private
+
+      def auth_info(tokens)
+        info = {
+          status: 'authenticated',
+          token_type: 'Bearer',
+          access_token: {
+            present: true,
+            expires_in: 15.minutes.to_i,
+            expires_at: 15.minutes.from_now.to_i
+          },
+          refresh_token: {
+            present: true,
+            expires_in: 30.days.to_i,
+            expires_at: 30.days.from_now.to_i
+          },
+          cookie_info: {
+            access_token_cookie: 'Set as HTTP-only cookie',
+            refresh_token_cookie: 'Set as HTTP-only cookie',
+            secure: Rails.env.production?,
+            same_site: 'Strict'
+          }
+        }
+
+        # Include actual tokens in development environment only
+        if Rails.env.development?
+          info[:access_token][:token] = tokens[:access_token]
+          info[:refresh_token][:token] = tokens[:refresh_token]
+        end
+
+        info
+      end
+
+      def serialize_user(user)
+        user.attributes.except('encrypted_password', 'refresh_token', 'password_digest')
+      end
+
+      def generate_auth_tokens(user_id)
+        JwtService.generate_tokens(user_id)
+      end
+
+      def store_auth_tokens(tokens, user)
+        user.update!(refresh_token: tokens[:refresh_token])
+
+        # Set access token cookie
+        cookies[:access_token] = {
+          value: tokens[:access_token],
+          httponly: true,
+          expires: 15.minutes.from_now,
+          secure: Rails.env.production?,
+          same_site: :strict,
+          path: '/'
+        }
+
+        # Set refresh token cookie
+        cookies[:refresh_token] = {
+          value: tokens[:refresh_token],
+          httponly: true,
+          expires: 30.days.from_now,
+          secure: Rails.env.production?,
+          same_site: :strict,
+          path: '/'
+        }
+      end
+
+      def clear_auth_cookies
+        cookies.delete(:access_token, path: '/')
+        cookies.delete(:refresh_token, path: '/')
+      end
+
+      def user_params
+        permitted_params = %i[email password password_confirmation phone_number name]
+        if params[:auth] && params[:auth][:user]
+          params.require(:auth).require(:user).permit(*permitted_params)
+        else
+          params.require(:user).permit(*permitted_params)
+        end
+      end
+    end
+  end
+end
