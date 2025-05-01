@@ -2,12 +2,14 @@ default: &default
   adapter: postgresql
   encoding: unicode
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  # sslmode: require
   port: 5432
+  host: localhost
 
 development:
   <<: *default
-  url: <%= ENV['DATABASE_URL'] %>
+  database: movie_explorer_app_development
+  username: <%= ENV['DB_USERNAME'] || 'postgres' %>
+  password: <%= ENV['DB_PASSWORD'] || '' %>
 
 test:
   <<: *default
