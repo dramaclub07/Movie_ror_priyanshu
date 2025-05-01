@@ -22,7 +22,7 @@ def seed_genres
     { name: 'Documentary' }
   ]
 
-  genres.each do |genre|
+  genres.each do |genre^
     Genre.find_or_create_by!(genre)
   end
 end
@@ -67,43 +67,27 @@ end
 
 # Create Users
 def seed_users
-  User.create!(
-    name: 'Test User',
-    email: 'user@example.com',
-    password: 'password',
-    mobile_number: '9897967890',
-    role: 'user'
-  )
+  User.find_or_create_by!(email: 'user@example.com') do |user|
+    user.name = 'Test User'
+    user.password = 'password'
+    user.mobile_number = '9897967890'
+    user.role = 'user'
+  end
 
-  User.create!(
-    name: 'Test Supervisor',
-    email: 'supervisor@example.com',
-    password: 'password',
-    mobile_number: '9876543219',
-    role: 'supervisor'
-  )
-end
-
-# Seed AdminUser for Active Admin (development only)
-def seed_admin_user
-  return unless Rails.env.development?
-
-  AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
-    admin.password = 'password'
-    admin.password_confirmation = 'password'
+  User.find_or_create_by!(email: 'supervisor@example.com') do |user|
+    user.name = 'Test Supervisor'
+    user.password = 'password'
+    user.mobile_number = '9876543219'
+    user.role = 'supervisor'
   end
 end
 
-# Seed AdminUser for Active Admin /admin interface
-def seed_active_admin_user
-  return unless Rails.env.development?
-
-  AdminUser.delete_all
-  AdminUser.create!(
-    email: 'admin@example.com',
-    password: 'password',
-    password_confirmation: 'password'
-  )
+# Seed AdminUser for Active Admin
+def seed_admin_user
+  AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
+    admin.password = ENV['ADMIN_PASSWORD'] || 'password'
+    admin.password_confirmation = ENV['ADMIN_PASSWORD'] || 'password'
+  end
 end
 
 # Execute seeding
@@ -111,10 +95,12 @@ begin
   ActiveRecord::Base.transaction do
     seed_genres
     seed_movies
-    User.delete_all # Clear existing users before seeding
+    unless Rails.env.production?
+      User.delete_all
+      AdminUser.delete_all
+    end
     seed_users
     seed_admin_user
-    seed_active_admin_user
   end
 
   puts "Seeded #{Genre.count} genres, #{Movie.count} movies, #{User.count} users, and #{AdminUser.count} admin users"
