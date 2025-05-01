@@ -1,0 +1,1307 @@
+---
+openapi: 3.0.1
+info:
+  title: Movie Explorer API
+  version: v1
+  description: This is the API documentation for the Movie Explorer application
+paths:
+  "/api/v1/admin/users":
+    get:
+      summary: List all users
+      tags:
+      - Admin
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        schema:
+          type: integer
+      - name: search
+        in: query
+        required: false
+        description: Search by email or phone
+        schema:
+          type: string
+      responses:
+        '200':
+          description: users found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        email:
+                          type: string
+                        phone_number:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                        subscriptions_count:
+                          type: integer
+                        role:
+                          type: string
+                  total_pages:
+                    type: integer
+                  current_page:
+                    type: integer
+                  total_count:
+                    type: integer
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+  "/api/v1/admin/users/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Get user details
+      tags:
+      - Admin
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: user found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      role:
+                        type: string
+                      subscriptions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            plan_type:
+                              type: string
+                            status:
+                              type: string
+                            movie:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                title:
+                                  type: string
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: user not found
+    put:
+      summary: Update user
+      tags:
+      - Admin
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: user updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                      role:
+                        type: string
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: user not found
+        '422':
+          description: invalid request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                phone_number:
+                  type: string
+                role:
+                  type: string
+                  enum:
+                  - user
+                  - supervisor
+    delete:
+      summary: Delete user
+      tags:
+      - Admin
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: user deleted
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+        '404':
+          description: user not found
+  "/api/v1/admin/dashboard":
+    get:
+      summary: Get dashboard statistics
+      tags:
+      - Admin
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: statistics found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_users:
+                    type: integer
+                  total_movies:
+                    type: integer
+                  total_subscriptions:
+                    type: integer
+                  active_subscriptions:
+                    type: integer
+                  recent_users:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        email:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+                  recent_subscriptions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        user_email:
+                          type: string
+                        movie_title:
+                          type: string
+                        created_at:
+                          type: string
+                          format: date-time
+        '401':
+          description: unauthorized
+        '403':
+          description: forbidden
+  "/api/v1/auth/sign_up":
+    post:
+      summary: Creates a user
+      tags:
+      - Authentication
+      parameters: []
+      responses:
+        '201':
+          description: user created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                  token:
+                    type: string
+        '422':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    password:
+                      type: string
+                    password_confirmation:
+                      type: string
+                    phone_number:
+                      type: string
+                  required:
+                  - email
+                  - password
+                  - password_confirmation
+                  - phone_number
+  "/api/v1/auth/sign_in":
+    post:
+      summary: Signs in a user
+      tags:
+      - Authentication
+      parameters: []
+      responses:
+        '200':
+          description: user signed in
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                  token:
+                    type: string
+        '401':
+          description: invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+              required:
+              - email
+              - password
+  "/api/v1/auth/google":
+    post:
+      summary: Signs in or creates a user with Google
+      tags:
+      - Authentication
+      parameters: []
+      responses:
+        '200':
+          description: successful authentication
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                  token:
+                    type: string
+        '401':
+          description: authentication failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                access_token:
+                  type: string
+              required:
+              - access_token
+  "/api/v1/auth/sign_out":
+    delete:
+      summary: Signs out a user
+      tags:
+      - Authentication
+      security:
+      - bearer_auth: []
+      responses:
+        '200':
+          description: signed out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+  "/api/v1/genres":
+    get:
+      summary: Lists all genres
+      tags:
+      - Genres
+      responses:
+        '200':
+          description: genres found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    name:
+                      type: string
+    post:
+      summary: Creates a genre
+      tags:
+      - Genres
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: genre created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+        '401':
+          description: unauthorized
+        '422':
+          description: invalid request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+              - name
+  "/api/v1/genres/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a genre
+      tags:
+      - Genres
+      responses:
+        '200':
+          description: genre found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
+                  movies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        release_year:
+                          type: integer
+                        rating:
+                          type: string
+                        poster_url:
+                          type: string
+                          nullable: true
+        '404':
+          description: genre not found
+    put:
+      summary: Updates a genre
+      tags:
+      - Genres
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: genre updated
+        '401':
+          description: unauthorized
+        '404':
+          description: genre not found
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+              - name
+    delete:
+      summary: Deletes a genre
+      tags:
+      - Genres
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: genre deleted
+        '401':
+          description: unauthorized
+        '422':
+          description: genre has associated movies
+  "/api/v1/movies":
+    get:
+      summary: Lists all movies
+      tags:
+      - Movies
+      parameters:
+      - name: page
+        in: query
+        required: false
+        description: Page number
+        schema:
+          type: integer
+      - name: per_page
+        in: query
+        required: false
+        description: Items per page
+        schema:
+          type: integer
+      - name: genre_id
+        in: query
+        required: false
+        description: Filter by genre ID
+        schema:
+          type: integer
+      - name: search
+        in: query
+        required: false
+        description: Search by title
+        schema:
+          type: string
+      - name: year
+        in: query
+        required: false
+        description: Filter by release year
+        schema:
+          type: integer
+      - name: rating
+        in: query
+        required: false
+        description: Filter by rating
+        schema:
+          type: string
+      - name: sort
+        in: query
+        required: false
+        enum:
+        - year_asc
+        - year_desc
+        - rating_asc
+        - rating_desc
+        description: "Sort order:\n * `year_asc` \n * `year_desc` \n * `rating_asc`
+          \n * `rating_desc` \n "
+        schema:
+          type: string
+      responses:
+        '200':
+          description: movies found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        release_year:
+                          type: integer
+                        rating:
+                          type: string
+                        genre:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                        poster_url:
+                          type: string
+                          nullable: true
+                  total_pages:
+                    type: integer
+                  current_page:
+                    type: integer
+                  total_count:
+                    type: integer
+    post:
+      summary: Creates a movie
+      tags:
+      - Movies
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: movie created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  release_year:
+                    type: integer
+                  rating:
+                    type: string
+                  genre:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                  poster_url:
+                    type: string
+                    nullable: true
+        '401':
+          description: unauthorized
+        '422':
+          description: invalid request
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                movie[title]:
+                  type: string
+                movie[release_year]:
+                  type: integer
+                movie[rating]:
+                  type: string
+                movie[genre_id]:
+                  type: integer
+                movie[poster]:
+                  type: string
+                  format: binary
+              required:
+              - movie[title]
+              - movie[release_year]
+              - movie[rating]
+              - movie[genre_id]
+  "/api/v1/movies/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a movie
+      tags:
+      - Movies
+      responses:
+        '200':
+          description: movie found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  release_year:
+                    type: integer
+                  rating:
+                    type: string
+                  genre:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                  poster_url:
+                    type: string
+                    nullable: true
+        '404':
+          description: movie not found
+    put:
+      summary: Updates a movie
+      tags:
+      - Movies
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: movie updated
+        '401':
+          description: unauthorized
+        '404':
+          description: movie not found
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                movie[title]:
+                  type: string
+                movie[release_year]:
+                  type: integer
+                movie[rating]:
+                  type: string
+                movie[genre_id]:
+                  type: integer
+                movie[poster]:
+                  type: string
+                  format: binary
+    delete:
+      summary: Deletes a movie
+      tags:
+      - Movies
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: movie deleted
+        '401':
+          description: unauthorized
+        '422':
+          description: movie has active subscriptions
+  "/api/v1/subscriptions":
+    get:
+      summary: Lists user subscriptions
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: subscriptions found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    plan_type:
+                      type: string
+                    status:
+                      type: string
+                    movie:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        release_year:
+                          type: integer
+                        rating:
+                          type: string
+                        poster_url:
+                          type: string
+                          nullable: true
+                        genre:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+        '401':
+          description: unauthorized
+    post:
+      summary: Creates a subscription
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: subscription created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  plan_type:
+                    type: string
+                  status:
+                    type: string
+                  movie:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      release_year:
+                        type: integer
+                      rating:
+                        type: string
+                      poster_url:
+                        type: string
+                        nullable: true
+                      genre:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+        '401':
+          description: unauthorized
+        '422':
+          description: invalid request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                movie_id:
+                  type: integer
+                plan_type:
+                  type: string
+                  enum:
+                  - basic
+                  - premium
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - inactive
+              required:
+              - movie_id
+              - plan_type
+              - status
+  "/api/v1/subscriptions/{id}":
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+    get:
+      summary: Retrieves a subscription
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: subscription found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  plan_type:
+                    type: string
+                  status:
+                    type: string
+                  movie:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      release_year:
+                        type: integer
+                      rating:
+                        type: string
+                      poster_url:
+                        type: string
+                        nullable: true
+                      genre:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+        '401':
+          description: unauthorized
+        '404':
+          description: subscription not found
+    put:
+      summary: Updates a subscription
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: subscription updated
+        '401':
+          description: unauthorized
+        '404':
+          description: subscription not found
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                plan_type:
+                  type: string
+                  enum:
+                  - basic
+                  - premium
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - inactive
+    delete:
+      summary: Deletes a subscription
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: subscription deleted
+        '401':
+          description: unauthorized
+        '404':
+          description: subscription not found
+  "/api/v1/users/profile":
+    get:
+      summary: Get user profile
+      tags:
+      - Users
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: profile found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      subscriptions_count:
+                        type: integer
+                      active_subscriptions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            plan_type:
+                              type: string
+                            status:
+                              type: string
+                            movie:
+                              type: object
+                              properties:
+                                id:
+                                  type: integer
+                                title:
+                                  type: string
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+    put:
+      summary: Update user profile
+      tags:
+      - Users
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      email:
+                        type: string
+                      phone_number:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+        '401':
+          description: unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '422':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: object
+                    properties:
+                      phone_number:
+                        type: array
+                        items:
+                          type: string
+                      current_password:
+                        type: array
+                        items:
+                          type: string
+                      password:
+                        type: array
+                        items:
+                          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_number:
+                  type: string
+                current_password:
+                  type: string
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+  "/api/v1/users/notifications/settings":
+    get:
+      summary: Get notification settings
+      tags:
+      - Users
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: settings found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email_notifications:
+                    type: boolean
+                  push_notifications:
+                    type: boolean
+                  sms_notifications:
+                    type: boolean
+        '401':
+          description: unauthorized
+    put:
+      summary: Update notification settings
+      tags:
+      - Users
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: settings updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email_notifications:
+                    type: boolean
+                  push_notifications:
+                    type: boolean
+                  sms_notifications:
+                    type: boolean
+        '401':
+          description: unauthorized
+        '422':
+          description: invalid request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_notifications:
+                  type: boolean
+                push_notifications:
+                  type: boolean
+                sms_notifications:
+                  type: boolean
+servers:
+- url: http://{defaultHost}
+  variables:
+    defaultHost:
+      default: localhost:3000
+components:
+  securitySchemes:
+    bearer_auth:
+      type: http
+      scheme: bearer
+      bearer_format: JWT
+  schemas:
+    user:
+      type: object
+      properties:
+        email:
+          type: string
+        phone_number:
+          type: string
+        password:
+          type: string
+        password_confirmation:
+          type: string
+      required:
+      - email
+      - phone_number
+      - password
+      - password_confirmation
