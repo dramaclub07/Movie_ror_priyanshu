@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_04_30_110515) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_01_192033) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -85,6 +85,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_04_30_110515) do
     t.bigint "genre_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "genre"
+    t.string "director"
+    t.integer "duration"
+    t.text "description"
+    t.string "main_lead"
+    t.string "streaming_platform"
+    t.boolean "premium", default: true
     t.index ["genre_id"], name: "index_movies_on_genre_id"
     t.index ["release_year"], name: "index_movies_on_release_year"
     t.index ["title"], name: "index_movies_on_title"

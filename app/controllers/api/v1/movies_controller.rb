@@ -91,7 +91,19 @@ module Api
       end
 
       def movie_params
-        params.require(:movie).permit(:title, :release_year, :rating, :genre_id, :poster)
+        params.require(:movie).permit(
+          :title,
+          :release_year,
+          :rating,
+          :genre_id,
+          :poster,
+          :director,
+          :duration,
+          :description,
+          :main_lead,
+          :streaming_platform,
+          :premium
+        )
       end
 
       def authorize_admin!

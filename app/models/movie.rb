@@ -6,9 +6,15 @@ class Movie < ApplicationRecord
   has_one_attached :poster
 
   validates :title, presence: true
-  validates :release_year, presence: true, numericality: { only_integer: true, greater_than: 1888 }
+  validates :release_year, presence: true, numericality: { only_integer: true, greater_than: 1880, less_than_or_equal_to: Date.current.year }
   validates :rating, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 10 }
   validates :genre_id, presence: true
+  validates :director, presence: true
+  validates :duration, presence: true, numericality: { only_integer: true, greater_than: 0 }
+  validates :description, presence: true
+  validates :main_lead, presence: true
+  validates :streaming_platform, presence: true
+  validates :premium, inclusion: { in: [true, false] }
 
   # Custom validation for poster content type
   validate :poster_content_type, if: :poster_attached?
