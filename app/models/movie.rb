@@ -29,6 +29,15 @@ class Movie < ApplicationRecord
     Rails.application.routes.url_helpers.url_for(banner) if banner.attached?
   end
 
+  def self.ransackable_attributes(auth_object = nil)
+    %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium created_at updated_at]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    %w[subscriptions users genre]
+  end
+
+  
   private
 
   def poster_attached?

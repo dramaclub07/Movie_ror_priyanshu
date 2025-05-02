@@ -20,6 +20,7 @@ ActiveAdmin.register User do
       f.input :phone_number
       f.input :password
       f.input :password_confirmation
+      f.input :role, as: :select, collection: User.roles.keys
     end
     f.actions
   end

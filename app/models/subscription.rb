@@ -13,6 +13,14 @@ class Subscription < ApplicationRecord
   validates :end_date, presence: true
   validate :end_date_after_start_date
 
+  def self.ransackable_attributes(auth_object = nil)
+    %w[id plan_type status start_date end_date user_id movie_id created_at updated_at]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    %w[user movie]
+  end
+
   private
 
   def end_date_after_start_date

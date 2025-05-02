@@ -2,15 +2,30 @@ class JwtService
   SECRET_KEY = Rails.application.credentials.secret_key_base
   ALGORITHM = 'HS256'
 
-  def self.generate_tokens(user_id)
-    access_payload = { user_id: user_id, exp: 15.minutes.from_now.to_i }
-    refresh_payload = { user_id: user_id, exp: 1.month.from_now.to_i }
+  # def self.generate_tokens(user_id)
+  #   access_payload = { user_id: user_id, exp: 15.minutes.from_now.to_i }
+  #   refresh_payload = { user_id: user_id, exp: 1.month.from_now.to_i }
 
+  #   {
+  #     access_token: encode(access_payload),
+  #     refresh_token: encode(refresh_payload)
+  #   }
+  # end
+  def self.generate_tokens(user_id)
+    access_expiry = 15.minutes.from_now
+    refresh_expiry = 1.month.from_now
+    
+    access_payload = { user_id: user_id, exp: access_expiry.to_i }
+    refresh_payload = { user_id: user_id, exp: refresh_expiry.to_i }
+    
     {
       access_token: encode(access_payload),
-      refresh_token: encode(refresh_payload)
+      refresh_token: encode(refresh_payload),
+      access_token_expiry: access_expiry,
+      refresh_token_expiry: refresh_expiry
     }
   end
+
 
   def self.encode(payload)
     JWT.encode(payload, SECRET_KEY, ALGORITHM)

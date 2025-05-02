@@ -11,6 +11,12 @@ def seed_genres
     { name: 'Documentary' }
   ]
 
+  AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
+  admin.password = 'password'
+  admin.password_confirmation = 'password'
+end
+
+
   genres.each do |genre|
     Genre.find_or_create_by!(genre)
   end

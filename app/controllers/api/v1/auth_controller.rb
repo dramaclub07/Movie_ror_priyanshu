@@ -2,6 +2,7 @@ module Api
   module V1
     class AuthController < ApplicationController
       skip_before_action :authenticate_user!, only: %i[sign_up sign_in google refresh_token]
+      before_action :authenticate_user_from_token, except: %i[sign_up sign_in google refresh_token sign_out]
 
       def sign_up
         user = User.new(user_params)
@@ -12,7 +13,7 @@ module Api
           render json: {
             user: serialize_user(user),
             message: 'User created successfully',
-            auth_info: auth_info(tokens)
+            auth_info: auth_info(tokens, include_tokens: true)
           }, status: :created
         else
           Rails.logger.error "User validation failed: #{user.errors.full_messages}"
@@ -38,7 +39,7 @@ module Api
           render json: {
             user: serialize_user(user),
             message: 'Logged in successfully',
-            auth_info: auth_info(tokens)
+            auth_info: auth_info(tokens, include_tokens: true)
           }
         else
           render json: { error: 'Invalid email or password' }, status: :unauthorized
@@ -58,7 +59,7 @@ module Api
 
           render json: {
             message: 'Tokens refreshed successfully',
-            auth_info: auth_info(tokens)
+            auth_info: auth_info(tokens, include_tokens: true)
           }
         else
           clear_auth_cookies
@@ -115,7 +116,7 @@ module Api
           render json: {
             user: serialize_user(user),
             message: 'Successfully authenticated with Google',
-            auth_info: auth_info(tokens)
+            auth_info: auth_info(tokens, include_tokens: true)
           }
         rescue OAuth2::Error => e
           render json: { error: 'Invalid Google token' }, status: :unauthorized
@@ -127,19 +128,19 @@ module Api
 
       private
 
-      def auth_info(tokens)
+      def auth_info(tokens, include_tokens: false)
         info = {
           status: 'authenticated',
           token_type: 'Bearer',
           access_token: {
             present: true,
-            expires_in: 15.minutes.to_i,
-            expires_at: 15.minutes.from_now.to_i
+            expires_in: (tokens[:access_token_expiry] - Time.now).to_i,
+            expires_at: tokens[:access_token_expiry].to_i
           },
           refresh_token: {
             present: true,
-            expires_in: 30.days.to_i,
-            expires_at: 30.days.from_now.to_i
+            expires_in: (tokens[:refresh_token_expiry] - Time.now).to_i,
+            expires_at: tokens[:refresh_token_expiry].to_i
           },
           cookie_info: {
             access_token_cookie: 'Set as HTTP-only cookie',
@@ -149,8 +150,8 @@ module Api
           }
         }
 
-        # Include actual tokens in development environment only
-        if Rails.env.development?
+        # Include actual tokens if requested (e.g., for Swagger/API clients)
+        if include_tokens
           info[:access_token][:token] = tokens[:access_token]
           info[:refresh_token][:token] = tokens[:refresh_token]
         end
@@ -173,7 +174,7 @@ module Api
         cookies[:access_token] = {
           value: tokens[:access_token],
           httponly: true,
-          expires: 15.minutes.from_now,
+          expires: tokens[:access_token_expiry],
           secure: Rails.env.production?,
           same_site: :strict,
           path: '/'
@@ -183,7 +184,7 @@ module Api
         cookies[:refresh_token] = {
           value: tokens[:refresh_token],
           httponly: true,
-          expires: 30.days.from_now,
+          expires: tokens[:refresh_token_expiry],
           secure: Rails.env.production?,
           same_site: :strict,
           path: '/'

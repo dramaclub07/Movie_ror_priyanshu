@@ -4,7 +4,7 @@ class User < ApplicationRecord
          :omniauthable, omniauth_providers: [:google_oauth2]
 
   # Enums
-  enum role: { user: 'user', supervisor: 'supervisor', admin: 'admin' }
+  enum role: { user: 'user', supervisor: 'supervisor' }
 
   # Associations
   has_many :subscriptions, dependent: :destroy
@@ -29,6 +29,14 @@ class User < ApplicationRecord
     end
   end
 
+  def self.ransackable_attributes(auth_object = nil)
+    %w[id name email phone_number role created_at updated_at]
+  end
+
+  def self.ransackable_associations(auth_object = nil)
+    %w[subscriptions movies]
+  end
+  
   def generate_otp
     otp = SecureRandom.random_number(100_000..999_999)
     update(otp: otp, otp_expires_at: 10.minutes.from_now)

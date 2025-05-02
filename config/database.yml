@@ -7,7 +7,7 @@ default: &default
 
 development:
   <<: *default
-  database: movie_explorer_app_development
+  database: 'movie_explorer_app'
   username: <%= ENV['DB_USERNAME'] || 'postgres' %>
   password: <%= ENV['DB_PASSWORD'] || '' %>
 
