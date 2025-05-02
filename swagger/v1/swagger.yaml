@@ -4,6 +4,11 @@ info:
   title: Movie Explorer API
   version: v1
   description: This is the API documentation for the Movie Explorer application
+servers:
+  - url: https://movie-explorer.onrender.com
+    description: Production server (Render)
+  - url: http://localhost:3000
+    description: Local development server
 paths:
   "/api/v1/admin/users":
     get:
@@ -105,7 +110,7 @@ paths:
                       email:
                         type: string
                       phone_number:
-                        type: string
+                          type: string
                       created_at:
                         type: string
                         format: date-time
@@ -189,6 +194,7 @@ paths:
                   enum:
                   - user
                   - supervisor
+                  - admin
     delete:
       summary: Delete user
       tags:
@@ -292,8 +298,63 @@ paths:
                         type: string
                       phone_number:
                         type: string
-                  token:
+                      name:
+                        type: string
+                      role:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                  message:
                     type: string
+                    example: "User created successfully"
+                  auth_info:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "authenticated"
+                      token_type:
+                        type: string
+                        example: "Bearer"
+                      access_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      refresh_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      cookie_info:
+                        type: object
+                        properties:
+                          access_token_cookie:
+                            type: string
+                          refresh_token_cookie:
+                            type: string
+                          secure:
+                            type: boolean
+                          same_site:
+                            type: string
         '422':
           description: invalid request
           content:
@@ -305,6 +366,22 @@ paths:
                     type: array
                     items:
                       type: string
+                  debug_info:
+                    type: object
+                    properties:
+                      params:
+                        type: object
+                      validation_errors:
+                        type: object
+        '500':
+          description: registration failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
       requestBody:
         content:
           application/json:
@@ -322,11 +399,14 @@ paths:
                       type: string
                     phone_number:
                       type: string
+                    name:
+                      type: string
                   required:
                   - email
                   - password
                   - password_confirmation
                   - phone_number
+                  - name
   "/api/v1/auth/sign_in":
     post:
       summary: Signs in a user
@@ -350,10 +430,74 @@ paths:
                         type: string
                       phone_number:
                         type: string
-                  token:
+                      name:
+                        type: string
+                      role:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                  message:
                     type: string
+                    example: "Logged in successfully"
+                  auth_info:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "authenticated"
+                      token_type:
+                        type: string
+                        example: "Bearer"
+                      access_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      refresh_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      cookie_info:
+                        type: object
+                        properties:
+                          access_token_cookie:
+                            type: string
+                          refresh_token_cookie:
+                            type: string
+                          secure:
+                            type: boolean
+                          same_site:
+                            type: string
         '401':
           description: invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: login failed
           content:
             application/json:
               schema:
@@ -367,13 +511,16 @@ paths:
             schema:
               type: object
               properties:
-                email:
-                  type: string
-                password:
-                  type: string
-              required:
-              - email
-              - password
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    password:
+                      type: string
+                  required:
+                  - email
+                  - password
   "/api/v1/auth/google":
     post:
       summary: Signs in or creates a user with Google
@@ -397,9 +544,73 @@ paths:
                         type: string
                       phone_number:
                         type: string
-                  token:
+                      name:
+                        type: string
+                      role:
+                        type: string
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
+                  message:
                     type: string
+                    example: "Successfully authenticated with Google"
+                  auth_info:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "authenticated"
+                      token_type:
+                        type: string
+                        example: "Bearer"
+                      access_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      refresh_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      cookie_info:
+                        type: object
+                        properties:
+                          access_token_cookie:
+                            type: string
+                          refresh_token_cookie:
+                            type: string
+                          secure:
+                            type: boolean
+                          same_site:
+                            type: string
         '401':
+          description: invalid Google token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
           description: authentication failed
           content:
             application/json:
@@ -418,6 +629,84 @@ paths:
                   type: string
               required:
               - access_token
+  "/api/v1/auth/refresh_token":
+    post:
+      summary: Refreshes authentication tokens
+      tags:
+      - Authentication
+      responses:
+        '200':
+          description: tokens refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Tokens refreshed successfully"
+                  auth_info:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "authenticated"
+                      token_type:
+                        type: string
+                        example: "Bearer"
+                      access_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      refresh_token:
+                        type: object
+                        properties:
+                          present:
+                            type: boolean
+                          expires_in:
+                            type: integer
+                          expires_at:
+                            type: integer
+                          token:
+                            type: string
+                            nullable: true
+                      cookie_info:
+                        type: object
+                        properties:
+                          access_token_cookie:
+                            type: string
+                          refresh_token_cookie:
+                            type: string
+                          secure:
+                            type: boolean
+                          same_site:
+                            type: string
+        '401':
+          description: invalid refresh token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+        '500':
+          description: token refresh failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
   "/api/v1/auth/sign_out":
     delete:
       summary: Signs out a user
@@ -434,6 +723,25 @@ paths:
                 type: object
                 properties:
                   message:
+                    type: string
+                    example: "Successfully signed out"
+                  auth_info:
+                    type: object
+                    properties:
+                      status:
+                        type: string
+                        example: "logged_out"
+                      tokens_cleared:
+                        type: boolean
+                        example: true
+        '500':
+          description: sign out failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
                     type: string
   "/api/v1/genres":
     get:
@@ -527,8 +835,12 @@ paths:
                         release_year:
                           type: integer
                         rating:
-                          type: string
+                          type: number
+                          format: float
                         poster_url:
+                          type: string
+                          nullable: true
+                        banner_url:
                           type: string
                           nullable: true
         '404':
@@ -548,6 +860,15 @@ paths:
       responses:
         '200':
           description: genre updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  name:
+                    type: string
         '401':
           description: unauthorized
         '404':
@@ -622,7 +943,8 @@ paths:
         required: false
         description: Filter by rating
         schema:
-          type: string
+          type: number
+          format: float
       - name: sort
         in: query
         required: false
@@ -631,8 +953,7 @@ paths:
         - year_desc
         - rating_asc
         - rating_desc
-        description: "Sort order:\n * `year_asc` \n * `year_desc` \n * `rating_asc`
-          \n * `rating_desc` \n "
+        description: "Sort order:\n * `year_asc` \n * `year_desc` \n * `rating_asc` \n * `rating_desc` \n "
         schema:
           type: string
       responses:
@@ -655,7 +976,8 @@ paths:
                         release_year:
                           type: integer
                         rating:
-                          type: string
+                          type: number
+                          format: float
                         genre:
                           type: object
                           properties:
@@ -663,15 +985,39 @@ paths:
                               type: integer
                             name:
                               type: string
+                        director:
+                          type: string
+                        duration:
+                          type: integer
+                        description:
+                          type: string
+                        main_lead:
+                          type: string
+                        streaming_platform:
+                          type: string
+                        premium:
+                          type: boolean
                         poster_url:
                           type: string
                           nullable: true
-                  total_pages:
-                    type: integer
-                  current_page:
-                    type: integer
-                  total_count:
-                    type: integer
+                        banner_url:
+                          type: string
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+                  meta:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                      total_pages:
+                        type: integer
+                      total_count:
+                        type: integer
     post:
       summary: Creates a movie
       tags:
@@ -692,50 +1038,100 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: integer
-                  title:
+                  message:
                     type: string
-                  release_year:
-                    type: integer
-                  rating:
-                    type: string
-                  genre:
+                    example: "Movie created successfully"
+                  movie:
                     type: object
                     properties:
                       id:
                         type: integer
-                      name:
+                      title:
                         type: string
-                  poster_url:
-                    type: string
-                    nullable: true
+                      release_year:
+                        type: integer
+                      rating:
+                        type: number
+                        format: float
+                      genre:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
+                      director:
+                        type: string
+                      duration:
+                        type: integer
+                      description:
+                        type: string
+                      main_lead:
+                        type: string
+                      streaming_platform:
+                        type: string
+                      premium:
+                        type: boolean
+                      poster_url:
+                        type: string
+                        nullable: true
+                      banner_url:
+                        type: string
+                        nullable: true
+                      created_at:
+                        type: string
+                        format: date-time
+                      updated_at:
+                        type: string
+                        format: date-time
         '401':
           description: unauthorized
         '422':
           description: invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                movie[title]:
-                  type: string
-                movie[release_year]:
-                  type: integer
-                movie[rating]:
-                  type: string
-                movie[genre_id]:
-                  type: integer
-                movie[poster]:
-                  type: string
-                  format: binary
-              required:
-              - movie[title]
-              - movie[release_year]
-              - movie[rating]
-              - movie[genre_id]
+                movie:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    release_year:
+                      type: integer
+                    rating:
+                      type: number
+                      format: float
+                    genre_id:
+                      type: integer
+                    director:
+                      type: string
+                    duration:
+                      type: integer
+                    description:
+                      type: string
+                    main_lead:
+                      type: string
+                    streaming_platform:
+                      type: string
+                    premium:
+                      type: boolean
+                  required:
+                  - title
+                  - release_year
+                  - rating
+                  - genre_id
   "/api/v1/movies/{id}":
     parameters:
     - name: id
@@ -762,7 +1158,8 @@ paths:
                   release_year:
                     type: integer
                   rating:
-                    type: string
+                    type: number
+                    format: float
                   genre:
                     type: object
                     properties:
@@ -770,9 +1167,30 @@ paths:
                         type: integer
                       name:
                         type: string
+                  director:
+                    type: string
+                  duration:
+                    type: integer
+                  description:
+                    type: string
+                  main_lead:
+                    type: string
+                  streaming_platform:
+                    type: string
+                  premium:
+                    type: boolean
                   poster_url:
                     type: string
                     nullable: true
+                  banner_url:
+                    type: string
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
         '404':
           description: movie not found
     put:
@@ -790,34 +1208,158 @@ paths:
       responses:
         '200':
           description: movie updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  release_year:
+                    type: integer
+                  rating:
+                    type: number
+                    format: float
+                  genre:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      name:
+                        type: string
+                  director:
+                    type: string
+                  duration:
+                    type: integer
+                  description:
+                    type: string
+                  main_lead:
+                    type: string
+                  streaming_platform:
+                    type: string
+                  premium:
+                    type: boolean
+                  poster_url:
+                    type: string
+                    nullable: true
+                  banner_url:
+                    type: string
+                    nullable: true
+                  created_at:
+                    type: string
+                    format: date-time
+                  updated_at:
+                    type: string
+                    format: date-time
         '401':
           description: unauthorized
         '404':
           description: movie not found
+        '422':
+          description: invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                movie[title]:
-                  type: string
-                movie[release_year]:
-                  type: integer
-                movie[rating]:
-                  type: string
-                movie[genre_id]:
-                  type: integer
-                movie[poster]:
-                  type: string
-                  format: binary
-    delete:
-      summary: Deletes a movie
+                movie:
+                  type: object
+                  properties:
+                    title:
+                      type: string
+                    release_year:
+                      type: integer
+                    rating:
+                      type: number
+                      format: float
+                    genre_id:
+                      type: integer
+                    director:
+                      type: string
+                    duration:
+                      type: integer
+                    description:
+                      type: string
+                    main_lead:
+                      type: string
+                    streaming_platform:
+                      type: string
+                    premium:
+                      type: boolean
+  "/api/v1/movies/{id}/rate":
+    post:
+      summary: Rates a movie
       tags:
       - Movies
       security:
       - bearer_auth: []
       parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: movie rated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Movie rated successfully"
+                  rating:
+                    type: number
+                    format: float
+        '401':
+          description: unauthorized
+        '404':
+          description: movie not found
+        '422':
+          description: invalid request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rating:
+                  type: number
+                  format: float
+              required:
+              - rating
+  "/api/v1/movies/{id}/remove_rating":
+    delete:
+      summary: Removes a rating from a movie
+      tags:
+      - Movies
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
       - name: Authorization
         in: header
         required: true
@@ -825,11 +1367,131 @@ paths:
           type: string
       responses:
         '204':
-          description: movie deleted
+          description: rating removed
         '401':
           description: unauthorized
-        '422':
-          description: movie has active subscriptions
+        '404':
+          description: movie not found
+  "/api/v1/movies/search":
+    get:
+      summary: Search movies
+      tags:
+      - Movies
+      parameters:
+      - name: search
+        in: query
+        required: true
+        description: Search by title
+        schema:
+          type: string
+      responses:
+        '200':
+          description: movies found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  movies:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        release_year:
+                          type: integer
+                        rating:
+                          type: number
+                          format: float
+                        genre:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+                        director:
+                          type: string
+                        duration:
+                          type: integer
+                        description:
+                          type: string
+                        main_lead:
+                          type: string
+                        streaming_platform:
+                          type: string
+                        premium:
+                          type: boolean
+                        poster_url:
+                          type: string
+                          nullable: true
+                        banner_url:
+                          type: string
+                          nullable: true
+                        created_at:
+                          type: string
+                          format: date-time
+                        updated_at:
+                          type: string
+                          format: date-time
+  "/api/v1/movies/recommended":
+    get:
+      summary: Get recommended movies
+      tags:
+      - Movies
+      responses:
+        '200':
+          description: recommended movies found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    release_year:
+                      type: integer
+                    rating:
+                      type: number
+                      format: float
+                    genre:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                    director:
+                      type: string
+                    duration:
+                      type: integer
+                    description:
+                      type: string
+                    main_lead:
+                      type: string
+                    streaming_platform:
+                      type: string
+                    premium:
+                      type: boolean
+                    poster_url:
+                      type: string
+                      nullable: true
+                    banner_url:
+                      type: string
+                      nullable: true
+                    created_at:
+                      type: string
+                      format: date-time
+                    updated_at:
+                      type: string
+                      format: date-time
   "/api/v1/subscriptions":
     get:
       summary: Lists user subscriptions
@@ -869,8 +1531,12 @@ paths:
                         release_year:
                           type: integer
                         rating:
-                          type: string
+                          type: number
+                          format: float
                         poster_url:
+                          type: string
+                          nullable: true
+                        banner_url:
                           type: string
                           nullable: true
                         genre:
@@ -918,8 +1584,12 @@ paths:
                       release_year:
                         type: integer
                       rating:
-                        type: string
+                        type: number
+                        format: float
                       poster_url:
+                        type: string
+                        nullable: true
+                      banner_url:
                         type: string
                         nullable: true
                       genre:
@@ -998,8 +1668,12 @@ paths:
                       release_year:
                         type: integer
                       rating:
-                        type: string
+                        type: number
+                        format: float
                       poster_url:
+                        type: string
+                        nullable: true
+                      banner_url:
                         type: string
                         nullable: true
                       genre:
@@ -1028,6 +1702,42 @@ paths:
       responses:
         '200':
           description: subscription updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  plan_type:
+                    type: string
+                  status:
+                    type: string
+                  movie:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      title:
+                        type: string
+                      release_year:
+                        type: integer
+                      rating:
+                        type: number
+                        format: float
+                      poster_url:
+                        type: string
+                        nullable: true
+                      banner_url:
+                        type: string
+                        nullable: true
+                      genre:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                          name:
+                            type: string
         '401':
           description: unauthorized
         '404':
@@ -1067,6 +1777,118 @@ paths:
           description: unauthorized
         '404':
           description: subscription not found
+  "/api/v1/subscriptions/active":
+    get:
+      summary: Lists active subscriptions
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: active subscriptions found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    plan_type:
+                      type: string
+                    status:
+                      type: string
+                    movie:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        release_year:
+                          type: integer
+                        rating:
+                          type: number
+                          format: float
+                        poster_url:
+                          type: string
+                          nullable: true
+                        banner_url:
+                          type: string
+                          nullable: true
+                        genre:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+        '401':
+          description: unauthorized
+  "/api/v1/subscriptions/history":
+    get:
+      summary: Lists subscription history
+      tags:
+      - Subscriptions
+      security:
+      - bearer_auth: []
+      parameters:
+      - name: Authorization
+        in: header
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: subscription history found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    plan_type:
+                      type: string
+                    status:
+                      type: string
+                    movie:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        release_year:
+                          type: integer
+                        rating:
+                          type: number
+                          format: float
+                        poster_url:
+                          type: string
+                          nullable: true
+                        banner_url:
+                          type: string
+                          nullable: true
+                        genre:
+                          type: object
+                          properties:
+                            id:
+                              type: integer
+                            name:
+                              type: string
+        '401':
+          description: unauthorized
   "/api/v1/users/profile":
     get:
       summary: Get user profile
@@ -1277,11 +2099,6 @@ paths:
                   type: boolean
                 sms_notifications:
                   type: boolean
-servers:
-- url: http://{defaultHost}
-  variables:
-    defaultHost:
-      default: localhost:3000
 components:
   securitySchemes:
     bearer_auth:
@@ -1296,6 +2113,8 @@ components:
           type: string
         phone_number:
           type: string
+        name:
+          type: string
         password:
           type: string
         password_confirmation:
@@ -1303,5 +2122,6 @@ components:
       required:
       - email
       - phone_number
+      - name
       - password
       - password_confirmation
