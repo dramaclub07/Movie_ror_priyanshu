@@ -1,63 +1,45 @@
+# app/controllers/api/v1/movies_controller.rb
 module Api
   module V1
     class MoviesController < ApplicationController
-      before_action :authenticate_user!, except: %i[index show]
-      before_action :set_movie, only: %i[show update destroy]
-      before_action :authorize_admin!, only: %i[create update destroy]
+      skip_before_action :verify_authenticity_token
+      skip_before_action :authenticate_user!, only: [:index, :show]
+      before_action :authorize_admin_or_supervisor!, only: [:create, :update, :destroy]
+      before_action :set_movie, only: [:show, :update, :destroy]
 
       # GET /api/v1/movies
       def index
-        @movies = Movie.includes(:genre)
-
-        # Filter by genre
-        @movies = @movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
-
-        # Filter by release year
-        @movies = @movies.where(release_year: params[:year]) if params[:year].present?
-
-        # Filter by rating
-        @movies = @movies.where(rating: params[:rating]) if params[:rating].present?
-
-        # Search by title
-        @movies = @movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
-
-        # Sort by release year or rating
-        case params[:sort]
-        when 'year_asc'
-          @movies = @movies.order(release_year: :asc)
-        when 'year_desc'
-          @movies = @movies.order(release_year: :desc)
-        when 'rating_asc'
-          @movies = @movies.order(rating: :asc)
-        when 'rating_desc'
-          @movies = @movies.order(rating: :desc)
-        end
-
-        # Paginate results
-        @movies = @movies.page(params[:page] || 1).per(params[:per_page] || 10)
+        movies = Movie.includes(:genre)
+        movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
+        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
+        movies = movies.page(params[:page]).per(10)
 
         render json: {
-          movies: @movies.as_json(include: :genre, methods: [:poster_url]),
-          total_pages: @movies.total_pages,
-          current_page: @movies.current_page,
-          total_count: @movies.total_count
-        }
+          movies: ActiveModelSerializers::SerializableResource.new(movies, each_serializer: MovieSerializer),
+          meta: {
+            current_page: movies.current_page,
+            total_pages: movies.total_pages,
+            total_count: movies.total_count
+          }
+        }, status: :ok
       end
 
       # GET /api/v1/movies/:id
       def show
-        render json: @movie.as_json(
-          include: :genre,
-          methods: [:poster_url]
-        )
+        render json: @movie, serializer: MovieSerializer, status: :ok
       end
 
       # POST /api/v1/movies
       def create
-        @movie = Movie.new(movie_params)
+        @movie = Movie.new(movie_params.except(:poster, :banner))
+        @movie.poster.attach(params[:movie][:poster]) if params[:movie][:poster].present?
+        @movie.banner.attach(params[:movie][:banner]) if params[:movie][:banner].present?
 
         if @movie.save
-          render json: @movie.as_json(include: :genre, methods: [:poster_url]), status: :created
+          render json: {
+            message: "Movie created successfully",
+            movie: ActiveModelSerializers::SerializableResource.new(@movie, serializer: MovieSerializer)
+          }, status: :created
         else
           render json: { errors: @movie.errors.full_messages }, status: :unprocessable_entity
         end
@@ -65,8 +47,16 @@ module Api
 
       # PATCH/PUT /api/v1/movies/:id
       def update
-        if @movie.update(movie_params)
-          render json: @movie.as_json(include: :genre, methods: [:poster_url])
+        if @movie.update(movie_params.except(:poster, :banner))
+          if params[:movie][:poster].present?
+            @movie.poster.purge
+            @movie.poster.attach(params[:movie][:poster])
+          end
+          if params[:movie][:banner].present?
+            @movie.banner.purge
+            @movie.banner.attach(params[:movie][:banner])
+          end
+          render json: @movie, serializer: MovieSerializer, status: :ok
         else
           render json: { errors: @movie.errors.full_messages }, status: :unprocessable_entity
         end
@@ -76,9 +66,10 @@ module Api
       def destroy
         if @movie.subscriptions.exists?
           render json: { error: 'Cannot delete movie with active subscriptions' }, status: :unprocessable_entity
+        elsif @movie.destroy
+          render json: { message: "Movie deleted successfully" }, status: :ok
         else
-          @movie.destroy
-          head :no_content
+          render json: { error: "Failed to delete movie" }, status: :unprocessable_entity
         end
       end
 
@@ -97,6 +88,7 @@ module Api
           :rating,
           :genre_id,
           :poster,
+          :banner,
           :director,
           :duration,
           :description,
@@ -106,10 +98,10 @@ module Api
         )
       end
 
-      def authorize_admin!
-        return if current_user&.admin?
-
-        render json: { error: 'Unauthorized access' }, status: :forbidden
+      def authorize_admin_or_supervisor!
+        unless current_user&.admin? || current_user&.supervisor?
+          render json: { error: "Unauthorized" }, status: :unauthorized
+        end
       end
     end
   end

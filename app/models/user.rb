@@ -1,3 +1,4 @@
+# app/models/user.rb
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: [:google_oauth2]
@@ -13,7 +14,7 @@ class User < ApplicationRecord
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true
   validates :phone_number, presence: true, uniqueness: true,
-                           format: { with: /\A\+?\d{10,14}\z/, message: 'must be a valid phone number' }
+            format: { with: /\A\+?\d{10,14}\z/, message: 'must be a valid phone number' }
 
   # Callbacks
   after_initialize :set_default_role, if: :new_record?
@@ -24,6 +25,7 @@ class User < ApplicationRecord
       user.password = Devise.friendly_token[0, 20]
       user.name = auth.info.name || 'Unknown'
       user.phone_number = '0000000000' # Default value, can be updated later
+      user.role = 'user'
     end
   end
 

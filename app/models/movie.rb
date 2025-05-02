@@ -1,9 +1,11 @@
+# app/models/movie.rb
 class Movie < ApplicationRecord
   has_many :subscriptions
   has_many :users, through: :subscriptions
   belongs_to :genre
 
   has_one_attached :poster
+  has_one_attached :banner
 
   validates :title, presence: true
   validates :release_year, presence: true, numericality: { only_integer: true, greater_than: 1880, less_than_or_equal_to: Date.current.year }
@@ -16,11 +18,15 @@ class Movie < ApplicationRecord
   validates :streaming_platform, presence: true
   validates :premium, inclusion: { in: [true, false] }
 
-  # Custom validation for poster content type
   validate :poster_content_type, if: :poster_attached?
+  validate :banner_content_type, if: :banner_attached?
 
   def poster_url
     Rails.application.routes.url_helpers.url_for(poster) if poster.attached?
+  end
+
+  def banner_url
+    Rails.application.routes.url_helpers.url_for(banner) if banner.attached?
   end
 
   private
@@ -29,11 +35,21 @@ class Movie < ApplicationRecord
     poster.attached?
   end
 
+  def banner_attached?
+    banner.attached?
+  end
+
   def poster_content_type
     return unless poster.attached?
-
     unless poster.blob.content_type.in?(%w[image/jpeg image/png])
       errors.add(:poster, 'must be a JPEG or PNG')
+    end
+  end
+
+  def banner_content_type
+    return unless banner.attached?
+    unless banner.blob.content_type.in?(%w[image/jpeg image/png])
+      errors.add(:banner, 'must be a JPEG or PNG')
     end
   end
 end

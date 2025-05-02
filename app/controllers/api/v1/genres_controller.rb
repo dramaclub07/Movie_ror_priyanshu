@@ -4,7 +4,7 @@ module Api
       before_action :set_genre, only: %i[show update destroy]
       before_action :authenticate_user!, except: %i[index show]
       before_action :authorize_supervisor!, only: %i[create update destroy]
-
+      
       # GET /api/v1/genres
       def index
         @genres = Genre.all
