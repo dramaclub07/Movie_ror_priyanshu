@@ -1,70 +1,66 @@
-module Api
-  module V1
-    class SubscriptionsController < ApplicationController
-      before_action :authenticate_user!
-      before_action :set_subscription, only: %i[show update destroy]
+class Api::V1::SubscriptionsController < ApplicationController
+  before_action :authenticate_user!, except: [:success]
+  skip_before_action :verify_authenticity_token
 
-      # GET /api/v1/subscriptions
-      def index
-        @subscriptions = current_user.subscriptions
-        render json: @subscriptions
-      end
+  def create
+    # Use find_or_create_by to ensure a single subscription per user
+    subscription = current_user.subscriptions.find_or_create_by(user: current_user)
+    plan_type = params[:plan_type]
+    return render json: { error: 'Invalid plan type' }, status: :bad_request unless %w[basic premium].include?(plan_type)
+    price_id = case plan_type
+               when 'basic'
+                 'price_1RJzzhPwmKg08vVsikRVrObY'
+               when 'premium'
+                 'price_1RK00OPwmKg08vVsRalzKgtr'
+               end
 
-      def active
-        @subscription = current_user.subscriptions.active.first
-        if @subscription
-          render json: @subscription
-        else
-          render json: { error: 'No active subscription found' }, status: :not_found
-        end
-      end
+    session = Stripe::Checkout::Session.create(
+      customer: subscription.stripe_customer_id || create_stripe_customer(subscription),
+      payment_method_types: ['card'],
+      line_items: [{ price: price_id, quantity: 1 }],
+      mode: 'subscription',
+      metadata: {
+        user_id: current_user.id,
+        plan_type: plan_type
+      },
+      success_url: "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}",
+      cancel_url: "http://localhost:3000/api/v1/subscriptions/cancel"
+    )
 
-      def history
-        @subscriptions = current_user.subscriptions.order(created_at: :desc)
-        render json: @subscriptions
-      end
+    render json: { session_id: session.id, url: session.url }, status: :ok
+  end
 
-      # GET /api/v1/subscriptions/:id
-      def show
-        render json: @subscription.as_json(include: { movie: { include: :genre } })
-      end
+  def success
+    session = Stripe::Checkout::Session.retrieve(params[:session_id])
+    subscription = Subscription.find_by(stripe_customer_id: session.customer)
 
-      # POST /api/v1/subscriptions
-      def create
-        @subscription = current_user.subscriptions.new(subscription_params)
-        if @subscription.save
-          render json: @subscription, status: :created
-        else
-          render json: { errors: @subscription.errors.full_messages }, status: :unprocessable_entity
-        end
-      end
-
-      # PATCH/PUT /api/v1/subscriptions/:id
-      def update
-        if @subscription.update(subscription_params)
-          render json: @subscription.as_json(include: { movie: { include: :genre } })
-        else
-          render json: { errors: @subscription.errors.full_messages }, status: :unprocessable_entity
-        end
-      end
-
-      # DELETE /api/v1/subscriptions/:id
-      def destroy
-        @subscription.destroy
-        head :no_content
-      end
-
-      private
-
-      def set_subscription
-        @subscription = current_user.subscriptions.find(params[:id])
-      rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Subscription not found' }, status: :not_found
-      end
-
-      def subscription_params
-        params.require(:subscription).permit(:movie_id, :plan_type, :status, :start_date, :end_date)
-      end
+    if subscription
+      plan_type = session.metadata.plan_type
+      subscription.update(stripe_subscription_id: session.subscription, plan_type: plan_type, status: 'active')
+      render json: { message: 'Subscription updated successfully' }, status: :ok
+    else
+      render json: { error: 'Subscription not found' }, status: :not_found
     end
+  end
+
+  def cancel
+    render json: { message: 'Payment cancelled' }, status: :ok
+  end
+
+  def index
+    subscriptions = current_user.subscriptions
+    render json: { subscriptions: subscriptions }, status: :ok
+  end
+
+  def show
+    render json: { subscription: @subscription }, status: :ok
+  end
+
+  private
+
+  def create_stripe_customer(subscription)
+    customer = Stripe::Customer.create(email: current_user.email)
+    subscription.update(stripe_customer_id: customer.id)
+    customer.id
   end
 end
