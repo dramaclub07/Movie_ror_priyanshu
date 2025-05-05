@@ -5,7 +5,11 @@ class Api::V1::SubscriptionsController < ApplicationController
   def create
     subscription = current_user.subscriptions.find_or_create_by(user: current_user)
     plan_type = params[:plan_type]
-    return render json: { error: 'Invalid plan type' }, status: :bad_request unless %w[basic premium].include?(plan_type)
+
+    unless %w[basic premium].include?(plan_type)
+      return render json: { error: 'Invalid plan type' }, status: :bad_request
+    end
+
     price_id = case plan_type
                when 'basic'
                  'price_1RJzzhPwmKg08vVsikRVrObY'
@@ -35,7 +39,16 @@ class Api::V1::SubscriptionsController < ApplicationController
 
     if subscription
       plan_type = session.metadata.plan_type
-      subscription.update(stripe_subscription_id: session.subscription, plan_type: plan_type, status: 'active')
+      stripe_sub = Stripe::Subscription.retrieve(session.subscription)
+
+      subscription.update(
+        stripe_subscription_id: session.subscription,
+        plan_type: plan_type,
+        status: 'active',
+        start_date: Time.at(stripe_sub.start_date).to_date,
+        end_date: Time.at(stripe_sub.current_period_end).to_date
+      )
+
       render json: { message: 'Subscription updated successfully' }, status: :ok
     else
       render json: { error: 'Subscription not found' }, status: :not_found
@@ -52,7 +65,30 @@ class Api::V1::SubscriptionsController < ApplicationController
   end
 
   def show
-    render json: { subscription: @subscription }, status: :ok
+    subscription = current_user.subscriptions.find_by(id: params[:id])
+    if subscription
+      render json: { subscription: subscription }, status: :ok
+    else
+      render json: { error: 'Subscription not found' }, status: :not_found
+    end
+  end
+
+  def active
+    subscription = current_user.subscriptions.find_by(status: 'active')
+
+    if subscription
+      render json: {
+        subscription: {
+          plan_type: subscription.plan_type,
+          start_date: subscription.start_date,
+          end_date: subscription.end_date,
+          stripe_subscription_id: subscription.stripe_subscription_id,
+          status: subscription.status
+        }
+      }, status: :ok
+    else
+      render json: { message: 'No active subscription found' }, status: :not_found
+    end
   end
 
   private

@@ -1,5 +1,4 @@
 Rails.application.routes.draw do
-  # Mount Rswag engines for API documentation
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
 
@@ -8,22 +7,21 @@ Rails.application.routes.draw do
 
   namespace :api do
     namespace :v1 do
-      # Auth routes
+      # Auth
       post 'auth/sign_up', to: 'auth#sign_up'
       post 'auth/sign_in', to: 'auth#sign_in'
       post 'auth/google', to: 'auth#google'
       post 'auth/refresh_token', to: 'auth#refresh_token'
       delete 'auth/sign_out', to: 'auth#sign_out'
-      
-      # Profile routes
+
       get 'profile', to: 'auth#profile'
       put 'update_profile', to: 'auth#update_profile'
       patch 'update_profile', to: 'auth#update_profile'
 
-      # User routes (already defined profile & update routes, no need for repetition)
+      # Users
       resources :users, only: %i[show update]
 
-      # Movie routes
+      # Movies
       resources :movies do
         collection do
           get 'search'
@@ -35,18 +33,19 @@ Rails.application.routes.draw do
         end
       end
 
-      # Genre routes
+      # Genres
       resources :genres
 
-      # Subscription routes
-      resources :subscriptions do
+      # Subscriptions
+      resources :subscriptions, only: [:create, :index, :show] do
         collection do
           get 'active'
-          get 'history'
+          get 'success'
+          get 'cancel'
         end
       end
 
-      # Admin routes
+      # Admin
       namespace :admin do
         resources :users, only: %i[index show update destroy]
         resources :movies
@@ -57,7 +56,7 @@ Rails.application.routes.draw do
     end
   end
 
-  # Catch-all route for React frontend - MUST be last
+  # Frontend catch-all
   get '*path', to: 'application#index', constraints: lambda { |request| 
     !request.xhr? && request.format.html? 
   }
