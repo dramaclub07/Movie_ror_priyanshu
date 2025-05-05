@@ -20,8 +20,16 @@ Rails.application.routes.draw do
 
       # Users
       resources :users, only: %i[show update]
+      #subscription
 
+      post   'subscriptions',           to: 'subscriptions#create'
+      get    'subscriptions',           to: 'subscriptions#index'
+      get    'subscriptions/:id',       to: 'subscriptions#show'
+      get    'subscriptions/active',    to: 'subscriptions#active'
+      get    'subscriptions/success',   to: 'subscriptions#success'
+      get    'subscriptions/cancel',    to: 'subscriptions#cancel'
       # Movies
+      
       resources :movies do
         collection do
           get 'search'
@@ -36,14 +44,7 @@ Rails.application.routes.draw do
       # Genres
       resources :genres
 
-      # Subscriptions
-      resources :subscriptions, only: [:create, :index, :show] do
-        collection do
-          get 'active'
-          get 'success'
-          get 'cancel'
-        end
-      end
+    
 
       # Admin
       namespace :admin do
