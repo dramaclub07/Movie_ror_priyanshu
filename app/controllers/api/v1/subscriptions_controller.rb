@@ -3,7 +3,6 @@ class Api::V1::SubscriptionsController < ApplicationController
   skip_before_action :verify_authenticity_token
 
   def create
-    # Use find_or_create_by to ensure a single subscription per user
     subscription = current_user.subscriptions.find_or_create_by(user: current_user)
     plan_type = params[:plan_type]
     return render json: { error: 'Invalid plan type' }, status: :bad_request unless %w[basic premium].include?(plan_type)

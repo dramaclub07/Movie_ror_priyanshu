@@ -1138,7 +1138,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "You need to sign in or sign up before continuing."
+                    example: "in or sign up before continuing."
         '422':
           description: Invalid request
           content:

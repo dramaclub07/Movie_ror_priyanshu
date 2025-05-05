@@ -21,9 +21,16 @@ class Movie < ApplicationRecord
   validate :poster_content_type, if: :poster_attached?
   validate :banner_content_type, if: :banner_attached?
 
+  # Scopes for filtering by poster and banner presence
+  scope :with_poster, -> { where.associated(:poster_attachment) }
+  scope :without_poster, -> { where.missing(:poster_attachment) }
+  scope :with_banner, -> { where.associated(:banner_attachment) }
+  scope :without_banner, -> { where.missing(:banner_attachment) }
+
   def poster_url
     Rails.application.routes.url_helpers.url_for(poster) if poster.attached?
   end
+  
 
   def banner_url
     Rails.application.routes.url_helpers.url_for(banner) if banner.attached?
@@ -37,7 +44,6 @@ class Movie < ApplicationRecord
     %w[subscriptions users genre]
   end
 
-  
   private
 
   def poster_attached?

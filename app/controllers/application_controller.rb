@@ -5,7 +5,6 @@
 #   before_action :authenticate_admin_user_from_token # For AdminUser (ActiveAdmin)
 #   before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' }
 
-
 #   include Devise::Controllers::Helpers
 
 #   def frontend
@@ -17,13 +16,15 @@
 #   end
 
 #   def jwt_secret_key
-#     ENV['JWT_SECRET_KEY'] || Rails.application.credentials.jwt_secret_key
-#   end
+#     ENV['JWT_SECRET_KEY'] || Rails.application.credentials.Rails.logger.info "Using JWT secret key: #{jwt_secret_key}"nfo "ApplicationController initialized"
+# Rails.logger.info "Request path: #{request.path}"
+# Rails.logger.info "Request format: #{request.format}"
+# Rails.logger.info "Request headers: #{request.headers}"
+# #   end
 
 #   def current_user
 #     @current_user
 #   end
-
 
 #   private
 
@@ -74,7 +75,7 @@
 #       if user
 #         @current_user = user
 #         sign_in(user, scope: :user)
-#       end 
+#       end
 #     rescue JWT::DecodeError => e
 #       Rails.logger.error "JWT Decode Error (User): #{e.message}"
 #       nil
@@ -109,16 +110,16 @@
 #   end
 # end
 
-
+# app/controllers/application_controller.rb
 class ApplicationController < ActionController::Base
   protect_from_forgery with: :null_session
   skip_before_action :verify_authenticity_token, if: :json_request?
 
-  before_action :authenticate_user_from_token # For User (API)
-  before_action :authenticate_admin_user_from_token # For AdminUser (ActiveAdmin)
-  before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' }
-
   include Devise::Controllers::Helpers
+
+  # Authenticate only for API requests
+  before_action :authenticate_user_from_token, if: :api_request?
+  before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' }
 
   def frontend
     render file: Rails.root.join('public', 'index.html'), layout: false
@@ -134,102 +135,59 @@ class ApplicationController < ActionController::Base
 
   private
 
-  ## 🔐 Secret Key Helper (ENV first, fallback to credentials)
   def jwt_secret_key
     ENV['JWT_SECRET_KEY'] || Rails.application.credentials.jwt_secret_key
   end
 
-  ## 📦 Request Type Checkers
   def json_request?
     request.format.json? || request.path.start_with?('/api/')
+  end
+
+  def api_request?
+    request.path.start_with?('/api/')
   end
 
   def admin_request?
     request.path.start_with?('/admin')
   end
 
-  ## 🔐 User Authenticator
   def authenticate_user!
     return if user_signed_in?
 
-    authenticate_user_from_token
-    unless @current_user
-      render json: { error: 'You need to sign in or sign up before continuing.' }, status: :unauthorized
-    end
+    render json: { error: 'You need to sign in or sign up before continuing.' }, status: :unauthorized
   end
 
-  ## 🔐 Admin Authenticator
-  def authenticate_admin_user!
-    unless admin_user_signed_in?
-      if request.format.html?
-        redirect_to new_admin_user_session_path, alert: "You need to sign in or sign up before continuing."
-      else
-        render json: { error: 'Unauthorized' }, status: :unauthorized
-      end
-      return
-    end
-
-    unless current_admin_user&.admin? || current_admin_user&.supervisor?
-      redirect_to root_path, alert: "Unauthorized access"
-    end
-  end
-
-  ## 🔑 Token Auth (User)
   def authenticate_user_from_token
-    token = cookies[:access_token] || request.headers['Authorization']&.split(' ')&.last
-    Rails.logger.info "Token found (User): #{token.present?}"
-
+    token = extract_token
     return unless token
 
-    if jwt_secret_key.blank?
-      Rails.logger.error "JWT secret key is missing for decoding"
-      return
-    end
-
     begin
-      decoded_token = JWT.decode(token, jwt_secret_key, true, algorithm: 'HS256')[0]
-      Rails.logger.info "Decoded token (User): #{decoded_token}"
-
-      user = User.find_by(id: decoded_token['user_id'])
-      Rails.logger.info "Authenticated user from token: #{user&.id}, Role: #{user&.role}"
+      payload = JwtService.decode(token)
+      user_id = payload[:user_id] || payload['user_id']
+      user = User.find_by(id: user_id)
 
       if user
         @current_user = user
-        sign_in(user, scope: :user)
+        sign_in(:user, user, store: false) # don't store in session for APIs
+      else
+        raise ActiveRecord::RecordNotFound, "User not found"
       end
     rescue JWT::DecodeError => e
-      Rails.logger.error "JWT Decode Error (User): #{e.message}"
+      Rails.logger.error "JWT Decode Error: #{e.message}"
+      render json: { error: 'Invalid or expired token' }, status: :unauthorized
+    rescue => e
+      Rails.logger.error "Authentication Error: #{e.message}"
+      render json: { error: 'Authentication failed' }, status: :unauthorized
     end
   end
 
-  ## 🔑 Token Auth (AdminUser)
-  def authenticate_admin_user_from_token
-    return unless admin_request?
+  def extract_token
+    auth_header = request.headers['Authorization']
+    return auth_header.split(' ').last if auth_header.present? && auth_header.start_with?('Bearer ')
 
-    token = cookies[:admin_access_token] || request.headers['Authorization']&.split(' ')&.last
-    Rails.logger.info "Token found (AdminUser): #{token.present?}"
-
-    return unless token
-
-    if jwt_secret_key.blank?
-      Rails.logger.error "JWT secret key is missing for admin decoding"
-      return
-    end
-
-    begin
-      decoded_token = JWT.decode(token, jwt_secret_key, true, algorithm: 'HS256')[0]
-      Rails.logger.info "Decoded token (AdminUser): #{decoded_token}"
-
-      admin_user = AdminUser.find_by(id: decoded_token['admin_user_id'])
-      Rails.logger.info "Authenticated admin user from token: #{admin_user&.id}, Role: #{admin_user&.role}"
-
-      sign_in(admin_user, scope: :admin_user) if admin_user
-    rescue JWT::DecodeError => e
-      Rails.logger.error "JWT Decode Error (AdminUser): #{e.message}"
-    end
+    cookies[:access_token] # fallback if using cookies
   end
 
-  ## 🧹 Clear All Auth Tokens
   def clear_auth_cookies
     cookies.delete(:access_token, path: '/')
     cookies.delete(:refresh_token, path: '/')

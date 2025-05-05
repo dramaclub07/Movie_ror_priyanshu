@@ -14,15 +14,14 @@ Rails.application.routes.draw do
       post 'auth/google', to: 'auth#google'
       post 'auth/refresh_token', to: 'auth#refresh_token'
       delete 'auth/sign_out', to: 'auth#sign_out'
+      
+      # Profile routes
+      get 'profile', to: 'auth#profile'
+      put 'update_profile', to: 'auth#update_profile'
+      patch 'update_profile', to: 'auth#update_profile'
 
-      # User routes
-      resources :users, only: %i[show update] do
-        collection do
-          get 'profile'
-          put 'update_profile'
-          patch 'update_profile'
-        end
-      end
+      # User routes (already defined profile & update routes, no need for repetition)
+      resources :users, only: %i[show update]
 
       # Movie routes
       resources :movies do
@@ -35,7 +34,7 @@ Rails.application.routes.draw do
           delete 'remove_rating'
         end
       end
-      
+
       # Genre routes
       resources :genres
 
@@ -59,7 +58,7 @@ Rails.application.routes.draw do
   end
 
   # Catch-all route for React frontend - MUST be last
-  get '*path', to: 'application#index', constraints: lambda { |request|
-    !request.xhr? && request.format.html?
+  get '*path', to: 'application#index', constraints: lambda { |request| 
+    !request.xhr? && request.format.html? 
   }
 end
