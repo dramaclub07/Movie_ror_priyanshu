@@ -1102,8 +1102,6 @@ paths:
                 subscription:
                   type: object
                   properties:
-                    movie_id:
-                      type: integer
                     plan_type:
                       type: string
                       enum: ["basic", "premium"]
@@ -1117,7 +1115,6 @@ paths:
                       type: string
                       format: date
                   required:
-                    - movie_id
                     - plan_type
                     - status
               required:

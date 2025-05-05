@@ -71,11 +71,10 @@ RSpec.configure do |config|
             properties: {
               id: { type: :integer },
               user_id: { type: :integer },
-              movie_id: { type: :integer },
               plan_type: { type: :string, enum: %w[basic premium] },
               status: { type: :string, enum: %w[active inactive] }
             },
-            required: %w[movie_id plan_type]
+            required: %w[plan_type]
           }
         }
       },

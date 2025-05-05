@@ -56,16 +56,15 @@ RSpec.describe 'api/v1/subscriptions', type: :request do
       parameter name: :subscription, in: :body, schema: {
         type: :object,
         properties: {
-          movie_id: { type: :integer },
           plan_type: { type: :string, enum: %w[basic premium] },
           status: { type: :string, enum: %w[active inactive] }
         },
-        required: %w[movie_id plan_type status]
+        required: %w[ plan_type status]
       }
 
       response '201', 'subscription created' do
         let(:Authorization) { 'Bearer valid_token' }
-        let(:subscription) { { movie_id: 1, plan_type: 'basic', status: 'active' } }
+        let(:subscription) { {  plan_type: 'basic', status: 'active' } }
         schema type: :object,
                properties: {
                  id: { type: :integer },
@@ -94,13 +93,12 @@ RSpec.describe 'api/v1/subscriptions', type: :request do
 
       response '401', 'unauthorized' do
         let(:Authorization) { 'Bearer invalid_token' }
-        let(:subscription) { { movie_id: 1, plan_type: 'basic', status: 'active' } }
+        let(:subscription) { { plan_type: 'basic', status: 'active' } }
         run_test!
       end
 
       response '422', 'invalid request' do
         let(:Authorization) { 'Bearer valid_token' }
-        let(:subscription) { { movie_id: 1 } }
         run_test!
       end
     end

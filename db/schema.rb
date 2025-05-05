@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_05_105141) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_05_121624) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -101,7 +101,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_05_105141) do
 
   create_table "subscriptions", force: :cascade do |t|
     t.bigint "user_id", null: false
-    t.bigint "movie_id", null: false
     t.string "plan_type", null: false
     t.string "status", null: false
     t.datetime "created_at", null: false
@@ -110,38 +109,19 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_05_105141) do
     t.string "stripe_subscription_id"
     t.datetime "start_date"
     t.date "end_date"
-    t.index ["movie_id"], name: "index_subscriptions_on_movie_id"
-    t.index ["user_id", "movie_id"], name: "index_subscriptions_on_user_id_and_movie_id", unique: true
     t.index ["user_id"], name: "index_subscriptions_on_user_id"
   end
 
-  create_table "users", force: :cascade do |t|
-    t.string "name", null: false
-    t.string "email", null: false
-    t.string "phone_number"
-    t.string "password_digest"
-    t.string "role", default: "user", null: false
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "google_id"
-    t.string "refresh_token"
-    t.string "github_id"
-    t.string "encrypted_password", default: "", null: false
-    t.string "reset_password_token"
-    t.datetime "reset_password_sent_at"
-    t.datetime "remember_created_at"
-    t.string "provider"
-    t.string "uid"
-    t.index ["email"], name: "index_users_on_email", unique: true
-    t.index ["github_id"], name: "index_users_on_github_id", unique: true
-    t.index ["phone_number"], name: "index_users_on_phone_number", unique: true
-    t.index ["refresh_token"], name: "index_users_on_refresh_token", unique: true
-    t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
-  end
+# Could not dump table "users" because of following ActiveRecord::ConnectionFailed
+#   PQconsumeInput() server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "movies", "genres"
-  add_foreign_key "subscriptions", "movies"
   add_foreign_key "subscriptions", "users"
 end
