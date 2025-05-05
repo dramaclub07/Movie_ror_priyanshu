@@ -33,7 +33,7 @@ class JwtService
     Rails.logger.debug("Decoded payload: #{decoded}") if Rails.env.development?
     HashWithIndifferentAccess.new(decoded)
   rescue JWT::ExpiredSignature
-    Rails.logger.warn("JWT expired")
+    Rails.logger.warn('JWT expired')
     nil
   rescue JWT::DecodeError => e
     Rails.logger.error("JWT decode failed: #{e.message}")
