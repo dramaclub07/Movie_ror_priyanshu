@@ -1,5 +1,6 @@
 class Api::V1::SubscriptionsController < ApplicationController
   before_action :authenticate_user!, except: [:success, :cancel]
+  before_action :set_stripe_api_key # Add this to set the Stripe API key
   skip_before_action :verify_authenticity_token
 
   PLAN_TYPE_OPTIONS = %w[basic premium].freeze
@@ -68,6 +69,15 @@ class Api::V1::SubscriptionsController < ApplicationController
   end
 
   private
+
+  # Set the Stripe API key
+  def set_stripe_api_key
+    Stripe.api_key = Rails.application.credentials.dig(:stripe, :secret_key)
+    unless Stripe.api_key
+      render json: { error: 'Stripe API key is missing. Please set it in credentials.' }, status: :internal_server_error
+      return
+    end
+  end
 
   # Check if the plan type is valid
   def valid_plan_type?(plan_type)
