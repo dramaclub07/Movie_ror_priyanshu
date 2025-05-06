@@ -1,20 +1,28 @@
+---
 default: &default
   adapter: postgresql
   encoding: unicode
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-  port: 5432
-  host: localhost
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+  timeout: 5000
 
 development:
   <<: *default
-  database: 'movie_explorer_app'
+  database: movie_explorer_app
+  host: localhost
+  port: 5432
   username: <%= ENV['DB_USERNAME'] || 'postgres' %>
   password: <%= ENV['DB_PASSWORD'] || '' %>
 
 test:
   <<: *default
   database: movie_explorer_app_test
+  host: localhost
+  port: 5432
+  username: <%= ENV['DB_USERNAME'] || 'postgres' %>
+  password: <%= ENV['DB_PASSWORD'] || '' %>
 
 production:
   <<: *default
   url: <%= ENV['DATABASE_URL'] %>
+  sslmode: require
+---

@@ -6,6 +6,8 @@ class Movie < ApplicationRecord
 
   has_one_attached :poster
   has_one_attached :banner
+  has_many :watchlists, dependent: :destroy
+  has_many :users, through: :watchlists
 
   validates :title, presence: true
   validates :release_year, presence: true, numericality: { only_integer: true, greater_than: 1880, less_than_or_equal_to: Date.current.year }

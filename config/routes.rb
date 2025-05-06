@@ -2,9 +2,11 @@ Rails.application.routes.draw do
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
 
+  # Devise and ActiveAdmin routes for admin_users
   devise_for :admin_users, ActiveAdmin::Devise.config
   ActiveAdmin.routes(self)
 
+  # API Routes - namespace :api and :v1
   namespace :api do
     namespace :v1 do
       # Auth
@@ -14,22 +16,22 @@ Rails.application.routes.draw do
       post 'auth/refresh_token', to: 'auth#refresh_token'
       delete 'auth/sign_out', to: 'auth#sign_out'
 
-      get 'profile', to: 'auth#profile'
-      put 'update_profile', to: 'auth#update_profile'
-      patch 'update_profile', to: 'auth#update_profile'
+      get 'auth/profile', to: 'auth#profile'
+      put 'auth/update_profile', to: 'auth#update_profile'
+      patch 'auth/update_profile', to: 'auth#update_profile'
 
       # Users
       resources :users, only: %i[show update]
-      #subscription
 
+      # Subscription
       post   'subscriptions',           to: 'subscriptions#create'
       get    'subscriptions',           to: 'subscriptions#index'
       get    'subscriptions/:id',       to: 'subscriptions#show'
       get    'subscriptions/active',    to: 'subscriptions#active'
       get    'subscriptions/success',   to: 'subscriptions#success'
       get    'subscriptions/cancel',    to: 'subscriptions#cancel'
+
       # Movies
-      
       resources :movies do
         collection do
           get 'search'
@@ -43,22 +45,10 @@ Rails.application.routes.draw do
 
       # Genres
       resources :genres
-
-    
-
-      # Admin
-      namespace :admin do
-        resources :users, only: %i[index show update destroy]
-        resources :movies
-        resources :genres
-        resources :subscriptions, only: %i[index show]
-        get 'dashboard', to: 'dashboard#index'
-      end
     end
   end
 
-  # Frontend catch-all
-  get '*path', to: 'application#index', constraints: lambda { |request| 
-    !request.xhr? && request.format.html? 
+  get '*path', to: 'application#index', constraints: lambda { |request|
+    !request.xhr? && request.format.html?
   }
 end

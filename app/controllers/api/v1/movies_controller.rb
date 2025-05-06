@@ -1,4 +1,3 @@
-# app/controllers/api/v1/movies_controller.rb
 module Api
   module V1
     class MoviesController < ApplicationController
@@ -32,8 +31,20 @@ module Api
       # POST /api/v1/movies
       def create
         @movie = Movie.new(movie_params.except(:poster, :banner))
-        @movie.poster.attach(params[:movie][:poster]) if params[:movie][:poster].present?
-        @movie.banner.attach(params[:movie][:banner]) if params[:movie][:banner].present?
+        
+        # Log incoming file params for debugging
+        Rails.logger.info "Poster param: #{params[:movie][:poster].inspect}"
+        Rails.logger.info "Banner param: #{params[:movie][:banner].inspect}"
+
+        if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
+          @movie.poster.attach(params[:movie][:poster])
+          Rails.logger.info "Poster attached: #{@movie.poster.attached?}"
+        end
+
+        if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
+          @movie.banner.attach(params[:movie][:banner])
+          Rails.logger.info "Banner attached: #{@movie.banner.attached?}"
+        end
 
         if @movie.save
           render json: {
@@ -41,6 +52,7 @@ module Api
             movie: ActiveModelSerializers::SerializableResource.new(@movie, serializer: MovieSerializer)
           }, status: :created
         else
+          Rails.logger.error "Movie save failed: #{@movie.errors.full_messages}"
           render json: { errors: @movie.errors.full_messages }, status: :unprocessable_entity
         end
       end
@@ -48,16 +60,25 @@ module Api
       # PATCH/PUT /api/v1/movies/:id
       def update
         if @movie.update(movie_params.except(:poster, :banner))
-          if params[:movie][:poster].present?
+          # Log incoming file params for debugging
+          Rails.logger.info "Poster param: #{params[:movie][:poster].inspect}"
+          Rails.logger.info "Banner param: #{params[:movie][:banner].inspect}"
+
+          if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
             @movie.poster.purge
             @movie.poster.attach(params[:movie][:poster])
+            Rails.logger.info "Poster updated: #{@movie.poster.attached?}"
           end
-          if params[:movie][:banner].present?
+
+          if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
             @movie.banner.purge
             @movie.banner.attach(params[:movie][:banner])
+            Rails.logger.info "Banner updated: #{@movie.banner.attached?}"
           end
+
           render json: @movie, serializer: MovieSerializer, status: :ok
         else
+          Rails.logger.error "Movie update failed: #{@movie.errors.full_messages}"
           render json: { errors: @movie.errors.full_messages }, status: :unprocessable_entity
         end
       end
@@ -106,4 +127,3 @@ module Api
     end
   end
 end
-

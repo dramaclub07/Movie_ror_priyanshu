@@ -10,6 +10,9 @@ class User < ApplicationRecord
   has_many :subscriptions, dependent: :destroy
   has_many :movies, through: :subscriptions
 
+  has_many :watchlists, dependent: :destroy
+  has_many :watchlist_movies, through: :watchlists, source: :movie
+
   # Validations
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true

@@ -15,7 +15,33 @@ paths:
       summary: User registration
       tags:
         - Authentication
-      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    password:
+                      type: string
+                    password_confirmation:
+                      type: string
+                    phone_number:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                    - email
+                    - password
+                    - password_confirmation
+                    - phone_number
+                    - name
+              required:
+                - user
       responses:
         '201':
           description: User created successfully
@@ -25,71 +51,12 @@ paths:
                 type: object
                 properties:
                   user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      email:
-                        type: string
-                      phone_number:
-                        type: string
-                      name:
-                        type: string
-                      role:
-                        type: string
-                      created_at:
-                        type: string
-                        format: date-time
-                      updated_at:
-                        type: string
-                        format: date-time
+                    $ref: '#/components/schemas/User'
                   message:
                     type: string
                     example: "User created successfully"
                   auth_info:
-                    type: object
-                    properties:
-                      status:
-                        type: string
-                        example: "authenticated"
-                      token_type:
-                        type: string
-                        example: "Bearer"
-                      access_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      refresh_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      cookie_info:
-                        type: object
-                        properties:
-                          access_token_cookie:
-                            type: string
-                          refresh_token_cookie:
-                            type: string
-                          secure:
-                            type: boolean
-                          same_site:
-                            type: string
+                    $ref: '#/components/schemas/AuthInfo'
         '422':
           description: Invalid registration request
           content:
@@ -118,6 +85,11 @@ paths:
                   error:
                     type: string
                     example: "Registration failed"
+  "/api/v1/auth/sign_in":
+    post:
+      summary: User login
+      tags:
+        - Authentication
       requestBody:
         content:
           application/json:
@@ -131,26 +103,11 @@ paths:
                       type: string
                     password:
                       type: string
-                    password_confirmation:
-                      type: string
-                    phone_number:
-                      type: string
-                    name:
-                      type: string
                   required:
                     - email
                     - password
-                    - password_confirmation
-                    - phone_number
-                    - name
               required:
                 - user
-  "/api/v1/auth/sign_in":
-    post:
-      summary: User login
-      tags:
-        - Authentication
-      parameters: []
       responses:
         '200':
           description: User logged in successfully
@@ -160,71 +117,12 @@ paths:
                 type: object
                 properties:
                   user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      email:
-                        type: string
-                      phone_number:
-                        type: string
-                      name:
-                        type: string
-                      role:
-                        type: string
-                      created_at:
-                        type: string
-                        format: date-time
-                      updated_at:
-                        type: string
-                        format: date-time
+                    $ref: '#/components/schemas/User'
                   message:
                     type: string
                     example: "Logged in successfully"
                   auth_info:
-                    type: object
-                    properties:
-                      status:
-                        type: string
-                        example: "authenticated"
-                      token_type:
-                        type: string
-                        example: "Bearer"
-                      access_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      refresh_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      cookie_info:
-                        type: object
-                        properties:
-                          access_token_cookie:
-                            type: string
-                          refresh_token_cookie:
-                            type: string
-                          secure:
-                            type: boolean
-                          same_site:
-                            type: string
+                    $ref: '#/components/schemas/AuthInfo'
         '401':
           description: Unauthorized login attempt
           content:
@@ -245,30 +143,21 @@ paths:
                   error:
                     type: string
                     example: "Login failed"
+  "/api/v1/auth/google":
+    post:
+      summary: Google authentication
+      tags:
+        - Authentication
       requestBody:
         content:
           application/json:
             schema:
               type: object
               properties:
-                user:
-                  type: object
-                  properties:
-                    email:
-                      type: string
-                    password:
-                      type: string
-                  required:
-                    - email
-                    - password
+                access_token:
+                  type: string
               required:
-                - user
-  "/api/v1/auth/google":
-    post:
-      summary: Google authentication
-      tags:
-        - Authentication
-      parameters: []
+                - access_token
       responses:
         '200':
           description: Successfully authenticated with Google
@@ -278,73 +167,14 @@ paths:
                 type: object
                 properties:
                   user:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      email:
-                        type: string
-                      phone_number:
-                        type: string
-                      name:
-                        type: string
-                      role:
-                        type: string
-                      created_at:
-                        type: string
-                        format: date-time
-                      updated_at:
-                        type: string
-                        format: date-time
+                    $ref: '#/components/schemas/User'
                   message:
                     type: string
                     example: "Successfully authenticated with Google"
                   auth_info:
-                    type: object
-                    properties:
-                      status:
-                        type: string
-                        example: "authenticated"
-                      token_type:
-                        type: string
-                        example: "Bearer"
-                      access_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      refresh_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      cookie_info:
-                        type: object
-                        properties:
-                          access_token_cookie:
-                            type: string
-                          refresh_token_cookie:
-                            type: string
-                          secure:
-                            type: boolean
-                          same_site:
-                            type: string
+                    $ref: '#/components/schemas/AuthInfo'
         '401':
-          description: Invalid Google token
+          description: Invalid Google token or missing access token
           content:
             application/json:
               schema:
@@ -363,22 +193,12 @@ paths:
                   error:
                     type: string
                     example: "Authentication failed"
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                access_token:
-                  type: string
-              required:
-                - access_token
   "/api/v1/auth/refresh_token":
     post:
       summary: Refresh authentication tokens
       tags:
         - Authentication
-      parameters: []
+      description: Requires the `refresh_token` cookie to be set.
       responses:
         '200':
           description: Tokens refreshed successfully
@@ -391,49 +211,7 @@ paths:
                     type: string
                     example: "Tokens refreshed successfully"
                   auth_info:
-                    type: object
-                    properties:
-                      status:
-                        type: string
-                        example: "authenticated"
-                      token_type:
-                        type: string
-                        example: "Bearer"
-                      access_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      refresh_token:
-                        type: object
-                        properties:
-                          present:
-                            type: boolean
-                          expires_in:
-                            type: integer
-                          expires_at:
-                            type: integer
-                          token:
-                            type: string
-                            nullable: true
-                      cookie_info:
-                        type: object
-                        properties:
-                          access_token_cookie:
-                            type: string
-                          refresh_token_cookie:
-                            type: string
-                          secure:
-                            type: boolean
-                          same_site:
-                            type: string
+                    $ref: '#/components/schemas/AuthInfo'
         '401':
           description: Invalid refresh token
           content:
@@ -459,8 +237,7 @@ paths:
       summary: User logout
       tags:
         - Authentication
-      security:
-        - BearerAuth: []
+      description: Uses the `refresh_token` cookie to identify the user.
       responses:
         '200':
           description: User logged out successfully
@@ -491,9 +268,93 @@ paths:
                   error:
                     type: string
                     example: "Sign out failed"
+  "/api/v1/profile":
+    get:
+      summary: Get current user profile
+      tags:
+        - Authentication
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - Ensure a valid Bearer token is provided in the Authorization header
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+  "/api/v1/update_profile":
+    put:
+      summary: Update current user profile
+      tags:
+        - Authentication
+      description: Also accepts PATCH method.
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user:
+                  type: object
+                  properties:
+                    email:
+                      type: string
+                    phone_number:
+                      type: string
+                    name:
+                      type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  message:
+                    type: string
+                    example: "Profile updated successfully"
+        '401':
+          description: Unauthorized - Ensure a valid Bearer token is provided in the Authorization header
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        '422':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errors:
+                    type: array
+                    items:
+                      type: string
   "/api/v1/genres":
     get:
-      summary: List genres
+      summary: List all genres
       tags:
         - Genres
       responses:
@@ -504,12 +365,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id:
-                      type: integer
-                    name:
-                      type: string
+                  $ref: '#/components/schemas/Genre'
     post:
       summary: Create a new genre
       tags:
@@ -537,12 +393,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
+                $ref: '#/components/schemas/Genre'
         '401':
           description: Unauthorized
           content:
@@ -554,7 +405,7 @@ paths:
                     type: string
                     example: "Unauthorized access"
         '403':
-          description: Forbidden
+          description: Forbidden (not supervisor/admin)
           content:
             application/json:
               schema:
@@ -588,7 +439,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Genre details
+          description: Genre details with associated movies
           content:
             application/json:
               schema:
@@ -646,12 +497,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
+                $ref: '#/components/schemas/Genre'
         '401':
           description: Unauthorized
           content:
@@ -663,7 +509,7 @@ paths:
                     type: string
                     example: "Unauthorized access"
         '403':
-          description: Forbidden
+          description: Forbidden (not supervisor/admin)
           content:
             application/json:
               schema:
@@ -720,7 +566,7 @@ paths:
                     type: string
                     example: "Unauthorized access"
         '403':
-          description: Forbidden
+          description: Forbidden (not supervisor/admin)
           content:
             application/json:
               schema:
@@ -729,6 +575,16 @@ paths:
                   error:
                     type: string
                     example: "Unauthorized access"
+        '404':
+          description: Genre not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Genre not found"
         '422':
           description: Genre has associated movies
           content:
@@ -759,21 +615,14 @@ paths:
             type: integer
         - name: page
           in: query
-          description: Page number for pagination
+          description: Page number for pagination (per_page fixed at 10)
           required: false
           schema:
             type: integer
             default: 1
-        - name: per_page
-          in: query
-          description: Number of movies per page
-          required: false
-          schema:
-            type: integer
-            default: 10
       responses:
         '200':
-          description: List of movies
+          description: List of movies with pagination metadata
           content:
             application/json:
               schema:
@@ -816,7 +665,18 @@ paths:
                   description: Rating of the movie (0 to 10)
                 movie[genre_id]:
                   type: integer
-                  description: ID of the genre
+                  description: |
+                    ID of the genre. Fetch available genres from `/api/v1/genres` to see IDs and names.
+                    Example genres (sorted alphabetically by name):
+                    - 3: Action
+                    - 2: Comedy
+                    - 14: Documentary
+                    - 10: Drama
+                    - 11: Horror
+                    - 12: Romance
+                    - 4: Sci-Fi
+                    - 1: Science Fiction
+                    - 13: Thriller
                 movie[director]:
                   type: string
                   description: Director of the movie
@@ -838,16 +698,15 @@ paths:
                 movie[poster]:
                   type: string
                   format: binary
-                  description: Poster image file (JPEG or PNG)
                 movie[banner]:
                   type: string
                   format: binary
-                  description: Banner image file (JPEG or PNG)
               required:
                 - movie[title]
                 - movie[release_year]
                 - movie[rating]
                 - movie[genre_id]
+                - movie[streaming_platform]
       responses:
         '201':
           description: Movie created successfully
@@ -862,7 +721,7 @@ paths:
                   movie:
                     $ref: '#/components/schemas/Movie'
         '401':
-          description: Unauthorized
+          description: Unauthorized (not admin/supervisor)
           content:
             application/json:
               schema:
@@ -872,7 +731,7 @@ paths:
                     type: string
                     example: "Unauthorized"
         '422':
-          description: Invalid request
+          description: Invalid request (e.g., missing required fields)
           content:
             application/json:
               schema:
@@ -932,43 +791,31 @@ paths:
               properties:
                 movie[title]:
                   type: string
-                  description: Title of the movie
                 movie[release_year]:
                   type: integer
-                  description: Release year of the movie
                 movie[rating]:
                   type: number
                   format: float
-                  description: Rating of the movie (0 to 10)
                 movie[genre_id]:
                   type: integer
-                  description: ID of the genre
                 movie[director]:
                   type: string
-                  description: Director of the movie
                 movie[duration]:
                   type: integer
-                  description: Duration of the movie in minutes
                 movie[description]:
                   type: string
-                  description: Description of the movie (max 1000 characters)
                 movie[main_lead]:
                   type: string
-                  description: Main lead actor/actress of the movie
                 movie[streaming_platform]:
                   type: string
-                  description: Streaming platform (e.g., Amazon, Netflix, Hulu, Disney+, HBO)
                 movie[premium]:
                   type: boolean
-                  description: Whether the movie is premium
                 movie[poster]:
                   type: string
                   format: binary
-                  description: Poster image file (JPEG or PNG)
                 movie[banner]:
                   type: string
                   format: binary
-                  description: Banner image file (JPEG or PNG)
       responses:
         '200':
           description: Movie updated successfully
@@ -977,7 +824,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Movie'
         '401':
-          description: Unauthorized
+          description: Unauthorized (not admin/supervisor)
           content:
             application/json:
               schema:
@@ -1032,7 +879,7 @@ paths:
                     type: string
                     example: "Movie deleted successfully"
         '401':
-          description: Unauthorized
+          description: Unauthorized (not admin/supervisor)
           content:
             application/json:
               schema:
@@ -1063,7 +910,7 @@ paths:
                     example: "Cannot delete movie with active subscriptions"
   "/api/v1/subscriptions":
     get:
-      summary: List subscriptions
+      summary: List user subscriptions
       tags:
         - Subscriptions
       security:
@@ -1074,9 +921,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Subscription'
+                type: object
+                properties:
+                  subscriptions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Subscription'
         '401':
           description: Unauthorized
           content:
@@ -1086,7 +936,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "You need to sign in or sign up before continuing."
+                    example: "Unauthorized"
     post:
       summary: Create a new subscription
       tags:
@@ -1099,33 +949,34 @@ paths:
             schema:
               type: object
               properties:
-                subscription:
-                  type: object
-                  properties:
-                    plan_type:
-                      type: string
-                      enum: ["basic", "premium"]
-                    status:
-                      type: string
-                      enum: ["active", "inactive"]
-                    start_date:
-                      type: string
-                      format: date
-                    end_date:
-                      type: string
-                      format: date
-                  required:
-                    - plan_type
-                    - status
+                plan_type:
+                  type: string
+                  enum: ["basic", "premium"]
+                  description: Subscription plan type (select from dropdown)
               required:
-                - subscription
+                - plan_type
       responses:
-        '201':
-          description: Subscription created successfully
+        '200':
+          description: Subscription created, redirect to Stripe checkout
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Subscription'
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  url:
+                    type: string
+        '400':
+          description: Invalid plan type
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid plan type. Choose basic or premium."
         '401':
           description: Unauthorized
           content:
@@ -1135,18 +986,76 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "in or sign up before continuing."
+                    example: "Unauthorized"
         '422':
-          description: Invalid request
+          description: Active subscription exists
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
+                  error:
+                    type: string
+                    example: "You already have an active subscription."
+        '500':
+          description: Stripe API key missing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Stripe API key is missing. Please set it in credentials."
+  "/api/v1/subscriptions/success":
+    get:
+      summary: Handle successful subscription payment
+      tags:
+        - Subscriptions
+      parameters:
+        - name: session_id
+          in: query
+          description: Stripe checkout session ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Subscription updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Subscription updated successfully"
+        '404':
+          description: Subscription not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Subscription not found"
+  "/api/v1/subscriptions/cancel":
+    get:
+      summary: Handle cancelled subscription payment
+      tags:
+        - Subscriptions
+      responses:
+        '200':
+          description: Payment cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Payment cancelled"
   "/api/v1/subscriptions/active":
     get:
       summary: Fetch active subscription
@@ -1170,7 +1079,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "You need to sign in or sign up before continuing."
+                    example: "Unauthorized"
         '404':
           description: No active subscription found
           content:
@@ -1178,35 +1087,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  error:
+                  message:
                     type: string
                     example: "No active subscription found"
-  "/api/v1/subscriptions/history":
-    get:
-      summary: Fetch subscription history
-      tags:
-        - Subscriptions
-      security:
-        - BearerAuth: []
-      responses:
-        '200':
-          description: Subscription history
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Subscription'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "You need to sign in or sign up before continuing."
   "/api/v1/subscriptions/{id}":
     get:
       summary: Fetch a subscription by ID
@@ -1229,43 +1112,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: integer
-                  plan_type:
-                    type: string
-                  status:
-                    type: string
-                  start_date:
-                    type: string
-                    format: date
-                  end_date:
-                    type: string
-                    format: date
-                  movie:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                      title:
-                        type: string
-                      release_year:
-                        type: integer
-                      rating:
-                        type: number
-                        format: float
-                      poster_url:
-                        type: string
-                        nullable: true
-                      banner_url:
-                        type: string
-                        nullable: true
-                      genre:
-                        type: object
-                        properties:
-                          id:
-                            type: integer
-                          name:
-                            type: string
+                  subscription:
+                    $ref: '#/components/schemas/Subscription'
         '401':
           description: Unauthorized
           content:
@@ -1275,7 +1123,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "You need to sign in or sign up before continuing."
+                    example: "Unauthorized"
         '404':
           description: Subscription not found
           content:
@@ -1286,49 +1134,73 @@ paths:
                   error:
                     type: string
                     example: "Subscription not found"
-    put:
-      summary: Update a subscription
+  "/api/v1/watchlist/{movie_id}":
+    post:
+      summary: Toggle movie in watchlist
       tags:
-        - Subscriptions
+        - Watchlist
       security:
         - BearerAuth: []
       parameters:
-        - name: id
+        - name: movie_id
           in: path
-          description: ID of the subscription to update
+          description: ID of the movie to toggle in watchlist
           required: true
           schema:
             type: integer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                subscription:
-                  type: object
-                  properties:
-                    plan_type:
-                      type: string
-                      enum: ["basic", "premium"]
-                    status:
-                      type: string
-                      enum: ["active", "inactive"]
-                    start_date:
-                      type: string
-                      format: date
-                    end_date:
-                      type: string
-                      format: date
-              required:
-                - subscription
+      responses:
+        '201':
+          description: Movie added to watchlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watchlist'
+        '200':
+          description: Movie removed from watchlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Movie removed from watchlist"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Unauthorized"
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Movie not found"
+  "/api/v1/watchlist":
+    get:
+      summary: List watchlisted movies
+      tags:
+        - Watchlist
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: Subscription updated successfully
+          description: List of watchlisted movies
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Subscription'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Movie'
         '401':
           description: Unauthorized
           content:
@@ -1338,64 +1210,7 @@ paths:
                 properties:
                   error:
                     type: string
-                    example: "You need to sign in or sign up before continuing."
-        '404':
-          description: Subscription not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Subscription not found"
-        '422':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-    delete:
-      summary: Delete a subscription
-      tags:
-        - Subscriptions
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          description: ID of the subscription to delete
-          required: true
-          schema:
-            type: integer
-      responses:
-        '204':
-          description: Subscription deleted successfully
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "You need to sign in or sign up before continuing."
-        '404':
-          description: Subscription not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Subscription not found"
+                    example: "Unauthorized"
 components:
   securitySchemes:
     BearerAuth:
@@ -1403,6 +1218,76 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        phone_number:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AuthInfo:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "authenticated"
+        token_type:
+          type: string
+          example: "Bearer"
+        access_token:
+          type: object
+          properties:
+            present:
+              type: boolean
+            expires_in:
+              type: integer
+            expires_at:
+              type: integer
+            token:
+              type: string
+              nullable: true
+        refresh_token:
+          type: object
+          properties:
+            present:
+              type: boolean
+            expires_in:
+              type: integer
+            expires_at:
+              type: integer
+            token:
+              type: string
+              nullable: true
+        cookie_info:
+          type: object
+          properties:
+            access_token_cookie:
+              type: string
+            refresh_token_cookie:
+              type: string
+            secure:
+              type: boolean
+            same_site:
+              type: string
+    Genre:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
     Movie:
       type: object
       properties:
@@ -1416,12 +1301,7 @@ components:
           type: number
           format: float
         genre:
-          type: object
-          properties:
-            id:
-              type: integer
-            name:
-              type: string
+          $ref: '#/components/schemas/Genre'
         director:
           type: string
         duration:
@@ -1446,17 +1326,6 @@ components:
         updated_at:
           type: string
           format: date-time
-      required:
-        - id
-        - title
-        - release_year
-        - rating
-        - genre
-        - director
-        - duration
-        - description
-        - main_lead
-        - streaming_platform
     Subscription:
       type: object
       properties:
@@ -1467,47 +1336,34 @@ components:
           enum: ["basic", "premium"]
         status:
           type: string
-          enum: ["active", "inactive"]
+          enum: ["pending", "active", "inactive"]
         start_date:
           type: string
           format: date
         end_date:
           type: string
           format: date
-        movie:
-          type: object
-          properties:
-            id:
-              type: integer
-            title:
-              type: string
-            release_year:
-              type: integer
-            rating:
-              type: number
-              format: float
-            poster_url:
-              type: string
-              nullable: true
-            banner_url:
-              type: string
-              nullable: true
-            genre:
-              type: object
-              properties:
-                id:
-                  type: integer
-                name:
-                  type: string
+        stripe_customer_id:
+          type: string
+          nullable: true
+        stripe_subscription_id:
+          type: string
+          nullable: true
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
-      required:
-        - id
-        - plan_type
-        - status
-        - start_date
-        - end_date
+    Watchlist:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        movie_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
