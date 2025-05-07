@@ -12,7 +12,7 @@ gem 'devise', '~> 4.9'
 gem 'devise-jwt'
 gem 'dotenv-rails'
 gem 'faker', group: %i[development test]
-gem 'fcm'
+# gem 'fcm'
 gem 'importmap-rails'
 gem 'jbuilder'
 gem 'jwt'
@@ -38,6 +38,8 @@ gem 'turbo-rails'
 gem 'twilio-ruby'
 gem 'tzinfo-data', platforms: %i[windows jruby]
 gem 'cloudinary'
+gem 'httparty'
+gem 'googleauth'
 # gem 'activestorage-cloudinary'
 
 group :development, :test do
@@ -60,3 +62,4 @@ group :test do
   gem 'capybara'
   gem 'selenium-webdriver'
 end
+

@@ -120,7 +120,7 @@ class Api::V1::SubscriptionsController < ApplicationController
 
     Stripe::Checkout::Session.create(
       customer: customer_id,
-      payment_method_types: ['card'],
+        payment_method_types: ['card'],
       line_items: [{
         price: price_id,
         quantity: 1

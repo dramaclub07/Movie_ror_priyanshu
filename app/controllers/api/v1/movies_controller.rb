@@ -47,6 +47,7 @@ module Api
         end
 
         if @movie.save
+          notify_new_movie(@movie) # Call notification method
           render json: {
             message: "Movie created successfully",
             movie: ActiveModelSerializers::SerializableResource.new(@movie, serializer: MovieSerializer)
@@ -115,13 +116,33 @@ module Api
           :streaming_platform,
           :premium,
           :poster,
-          :banner,
+          :banner
         )
       end
 
       def authorize_admin_or_supervisor!
         unless current_user&.admin? || current_user&.supervisor?
-          render json: { error: "Unauthorized" }, status: :unauthorized
+          render json: { error: "Unauthorized" }, status: :Kalunauthorized
+        end
+      end
+
+      def notify_new_movie(movie)
+        # Find users eligible for notifications
+        users = User.where(notifications_enabled: true).where.not(device_token: [nil, ""])
+        return if users.empty?
+
+        device_tokens = users.pluck(:device_token)
+        begin
+          fcm_service = FcmService.new
+          result = fcm_service.send_notification(
+            device_tokens,
+            "New Movie Added!",
+            "#{movie.title} has been added to the Movie Explorer collection.",
+            { movie_id: movie.id.to_s }
+          )
+          Rails.logger.info "FCM notification result: #{result[:message]}"
+        rescue StandardError => e
+          Rails.logger.error "Failed to send FCM notification for movie #{movie.id}: #{e.message}"
         end
       end
     end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_06_091245) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_07_100104) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -129,6 +129,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_06_091245) do
     t.datetime "remember_created_at"
     t.string "provider"
     t.string "uid"
+    t.string "device_token"
+    t.boolean "notifications_enabled", default: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["github_id"], name: "index_users_on_github_id", unique: true
     t.index ["phone_number"], name: "index_users_on_phone_number", unique: true

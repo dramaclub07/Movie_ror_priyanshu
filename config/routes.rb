@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+
+  root to: redirect("/api-docs")
+  
   mount Rswag::Ui::Engine => '/api-docs'
   mount Rswag::Api::Engine => '/api-docs'
 
@@ -20,7 +23,7 @@ Rails.application.routes.draw do
       put 'auth/update_profile', to: 'auth#update_profile'
       patch 'auth/update_profile', to: 'auth#update_profile'
 
-      # Users
+
       resources :users, only: %i[show update]
 
       # Subscription
@@ -45,6 +48,11 @@ Rails.application.routes.draw do
 
       # Genres
       resources :genres
+
+      # Notifications
+      post 'update_device_token', to: 'notifications#update_device_token'
+      post 'toggle_notifications', to: 'notifications#toggle_notifications'
+      post 'notifications/test', to: 'notifications#test_notification'
     end
   end
 
