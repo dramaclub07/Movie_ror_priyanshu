@@ -1,4 +1,3 @@
-# app/models/movie.rb
 class Movie < ApplicationRecord
   has_many :subscriptions
   has_many :users, through: :subscriptions
@@ -30,12 +29,17 @@ class Movie < ApplicationRecord
   scope :without_banner, -> { where.missing(:banner_attachment) }
 
   def poster_url
-    Rails.application.routes.url_helpers.url_for(poster) if poster.attached?
+    poster.blob.service_url if poster.attached?
+  rescue => e
+    Rails.logger.error "Failed to generate poster URL for movie #{id}: #{e.message}"
+    nil
   end
-  
 
   def banner_url
-    Rails.application.routes.url_helpers.url_for(banner) if banner.attached?
+    banner.blob.service_url if banner.attached?
+  rescue => e
+    Rails.logger.error "Failed to generate banner URL for movie #{id}: #{e.message}"
+    nil
   end
 
   def self.ransackable_attributes(auth_object = nil)

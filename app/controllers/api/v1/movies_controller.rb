@@ -108,14 +108,14 @@ module Api
           :release_year,
           :rating,
           :genre_id,
-          :poster,
-          :banner,
           :director,
           :duration,
           :description,
           :main_lead,
           :streaming_platform,
-          :premium
+          :premium,
+          :poster,
+          :banner,
         )
       end
 
