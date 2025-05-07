@@ -1,7 +1,7 @@
 # app/controllers/api/v1/watchlist_controller.rb
 module Api
   module V1
-    class WatchlistController < ApplicationController
+    class WatchlistsController < ApplicationController
       before_action :authenticate_user!
       before_action :set_movie, only: [:create]
 
