@@ -24,5 +24,6 @@ test:
 production:
   <<: *default
   url: <%= ENV['DATABASE_URL'] %>
+  pool: 15
   sslmode: require
 ---
