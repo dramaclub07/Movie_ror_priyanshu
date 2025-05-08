@@ -16,7 +16,7 @@ ActiveAdmin.register Movie do
     column :rating
     column :poster do |movie|
       if movie.poster.attached?
-        image_tag cl_image_path(movie.poster.key, width: 100, crop: :fill), alt: "Poster"
+        image_tag cl_image_path(movie.poster.key, cloud_name: "dchkbbkkn", width: 100, crop: :fill), alt: "Poster"
       else
         "No Poster"
       end
