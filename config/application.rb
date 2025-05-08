@@ -2,9 +2,13 @@ require_relative "boot"
 
 require "rails/all"
 
+
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
+
+# Load environment variables
+Dotenv::Rails.load
 
 module MovieExplorerApp
   class Application < Rails::Application
@@ -15,6 +19,9 @@ module MovieExplorerApp
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w(assets tasks))
+    config.autoload_paths += %W(#{config.root}/app/services #{config.root}/lib)
+    config.autoload_lib(ignore: %w(assets tasks active_admin.bak))
+    config.assets.enabled = true # Ensure Sprockets is enabled
 
     # Configuration for the application, engines, and railties goes here.
     #
@@ -24,4 +31,5 @@ module MovieExplorerApp
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
   end
+  require 'devise'
 end
