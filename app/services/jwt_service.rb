@@ -1,8 +1,7 @@
 class JwtService
   SECRET_KEY = Rails.application.credentials.jwt_secret_key || Rails.application.credentials.secret_key_base
-
   ALGORITHM = 'HS256'
-  ACCESS_TOKEN_EXPIRY = 240.minutes
+  ACCESS_TOKEN_EXPIRY = 60.minutes
   REFRESH_TOKEN_EXPIRY = 1.month
 
   # Generates both access and refresh tokens along with their expiry times
@@ -29,6 +28,11 @@ class JwtService
   # Decodes the JWT token and returns the decoded payload
   def self.decode(token)
     Rails.logger.debug("Decoding token: #{token}") if Rails.env.development?
+    # Check blacklist
+    if BlacklistedToken.exists?(token: token)
+      Rails.logger.warn("Token is blacklisted: #{token}")
+      return nil
+    end
     decoded = JWT.decode(token, SECRET_KEY, true, { algorithm: ALGORITHM })[0]
     Rails.logger.debug("Decoded payload: #{decoded}") if Rails.env.development?
     HashWithIndifferentAccess.new(decoded)
@@ -60,10 +64,33 @@ class JwtService
     { refresh_token: new_refresh_token }
   end
 
-  # Invalidates the user's refresh token
-  def self.invalidate_refresh_token(user_id)
+  # Invalidates the user's refresh token and blacklists both access and refresh tokens
+  def self.invalidate_tokens(user_id, access_token, refresh_token)
     user = User.find_by(id: user_id)
     user.update(refresh_token: nil) if user
+
+    # Blacklist tokens in database
+    if access_token
+      decoded_access = decode(access_token)
+      if decoded_access
+        BlacklistedToken.create!(
+          token: access_token,
+          user_id: user_id,
+          expires_at: Time.at(decoded_access[:exp])
+        )
+      end
+    end
+
+    if refresh_token
+      decoded_refresh = decode(refresh_token)
+      if decoded_refresh
+        BlacklistedToken.create!(
+          token: refresh_token,
+          user_id: user_id,
+          expires_at: Time.at(decoded_refresh[:exp])
+        )
+      end
+    end
   end
 
   # Checks if the refresh token has expired

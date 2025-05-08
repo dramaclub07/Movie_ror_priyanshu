@@ -72,7 +72,9 @@ module Api
       end
 
       def sign_out
-        JwtService.invalidate_refresh_token(current_user.id) if current_user
+        access_token = cookies[:access_token]
+        refresh_token = cookies[:refresh_token]
+        JwtService.invalidate_tokens(current_user.id, access_token, refresh_token) if current_user
         clear_auth_cookies
         render json: {
           message: 'Successfully signed out',
