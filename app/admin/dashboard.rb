@@ -15,7 +15,7 @@ ActiveAdmin.register_page "Dashboard" do
         panel "Recently Added Movies" do
           ul do
             Movie.order(created_at: :desc).limit(5).map do |movie|
-              li link_to("#{movie.title} (#{movie.language})", admin_movie_path(movie))
+              li link_to("#{movie.title}", admin_movie_path(movie))
             end
           end
         end

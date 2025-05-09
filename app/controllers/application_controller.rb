@@ -4,10 +4,8 @@ class ApplicationController < ActionController::Base
 
   include Devise::Controllers::Helpers
 
-  # Authenticate only for API requests
   before_action :authenticate_user_from_token, if: :api_request?
   
-  # Skip authentication for /admin or /frontend paths or if user is already signed in
   before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' || user_signed_in? }
 
   def frontend
@@ -57,7 +55,7 @@ class ApplicationController < ActionController::Base
 
       if user
         @current_user = user
-        sign_in(:user, user, store: false) # don't store in session for APIs
+        sign_in(:user, user, store: false) 
       else
         raise ActiveRecord::RecordNotFound, "User not found"
       end
@@ -74,7 +72,7 @@ class ApplicationController < ActionController::Base
     auth_header = request.headers['Authorization']
     return auth_header.split(' ').last if auth_header.present? && auth_header.start_with?('Bearer ')
 
-    cookies[:access_token] # fallback if using cookies
+    cookies[:access_token] 
   end
 
   def clear_auth_cookies

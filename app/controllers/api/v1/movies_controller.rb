@@ -6,7 +6,6 @@ module Api
       before_action :authorize_admin_or_supervisor!, only: [:create, :update, :destroy]
       before_action :set_movie, only: [:show, :update, :destroy]
 
-      # GET /api/v1/movies
       def index
         movies = Movie.includes(:genre)
         movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
@@ -23,16 +22,13 @@ module Api
         }, status: :ok
       end
 
-      # GET /api/v1/movies/:id
       def show
         render json: @movie, serializer: MovieSerializer, status: :ok
       end
 
-      # POST /api/v1/movies
       def create
         @movie = Movie.new(movie_params.except(:poster, :banner))
         
-        # Log incoming file params for debugging
         Rails.logger.info "Poster param: #{params[:movie][:poster].inspect}"
         Rails.logger.info "Banner param: #{params[:movie][:banner].inspect}"
 
