@@ -1,5 +1,7 @@
 ActiveAdmin.register Movie do
-  permit_params :title, :genre, :release_year, :director, :duration, :description, :premium, :poster, :banner, :main_lead,:rating, :streaming_platform
+  # Ensure genre_id is used (not genre)
+  permit_params :title, :genre_id, :release_year, :director, :duration, :description,
+                :premium, :poster, :banner, :main_lead, :rating, :streaming_platform
 
   index do
     selectable_column
@@ -14,26 +16,31 @@ ActiveAdmin.register Movie do
     column :main_lead
     column :streaming_platform
     column :rating
+
     column :poster do |movie|
-      if movie.poster.attached?
+      if movie.poster.attached? && movie.poster.blob.present?
         image_tag cl_image_path(movie.poster.key, width: 100, crop: :fill), alt: "Poster"
       else
-        "No Poster"
+        status_tag("No Poster", :warning)
       end
     end
+
     column :banner do |movie|
-      if movie.banner.attached?
+      if movie.banner.attached? && movie.banner.blob.present?
         image_tag cl_image_path(movie.banner.key, width: 100, crop: :fill), alt: "Banner"
       else
-        "No Banner"
+        status_tag("No Banner", :warning)
       end
     end
+
     column :poster_url do |movie|
-      movie.poster.attached? ? cloudinary_url(movie.poster.key) : "N/A"
+      movie.poster.attached? && movie.poster.blob.present? ? cloudinary_url(movie.poster.key) : "N/A"
     end
+
     column :banner_url do |movie|
-      movie.banner.attached? ? cloudinary_url(movie.banner.key) : "N/A"
+      movie.banner.attached? && movie.banner.blob.present? ? cloudinary_url(movie.banner.key) : "N/A"
     end
+
     actions
   end
 
