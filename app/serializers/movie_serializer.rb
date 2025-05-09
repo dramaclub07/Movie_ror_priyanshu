@@ -4,12 +4,4 @@ class MovieSerializer < ActiveModel::Serializer
              :poster_url, :banner_url, :created_at, :updated_at
 
   belongs_to :genre, serializer: GenreSerializer
-
-  def poster_url
-    object.poster_url
-  end
-
-  def banner_url
-    object.banner_url
-  end
 end

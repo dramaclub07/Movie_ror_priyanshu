@@ -1,7 +1,10 @@
 class Movie < ApplicationRecord
+
+  include Rails.application.routes.url_helpers
+
   has_many :subscriptions
   has_many :users, through: :subscriptions
-  belongs_to :genre
+  belongs_to :genre, counter_cache: true
 
   has_one_attached :poster
   has_one_attached :banner
@@ -28,19 +31,24 @@ class Movie < ApplicationRecord
   scope :with_banner, -> { where.associated(:banner_attachment) }
   scope :without_banner, -> { where.missing(:banner_attachment) }
 
+  
   def poster_url
-    poster.blob.service_url if poster.attached?
-  rescue => e
-    Rails.logger.error "Failed to generate poster URL for movie #{id}: #{e.message}"
+  if poster.attached?
+    poster.service.url(poster.key, eager: true)
+  else
     nil
   end
+end
 
-  def banner_url
-    banner.blob.service_url if banner.attached?
-  rescue => e
-    Rails.logger.error "Failed to generate banner URL for movie #{id}: #{e.message}"
+def banner_url
+  if banner.attached?
+    banner.service.url(banner.key, eager: true)
+  else
     nil
   end
+end
+
+
 
   def self.ransackable_attributes(auth_object = nil)
     %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium created_at updated_at]

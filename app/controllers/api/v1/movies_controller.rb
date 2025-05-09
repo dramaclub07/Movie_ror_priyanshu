@@ -9,7 +9,8 @@ module Api
       # GET /api/v1/movies
       def index
         movies = Movie.includes(:genre)
-        movies = filter_movies(movies)
+        movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
+        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
         movies = movies.page(params[:page]).per(10)
 
         render json: {
@@ -30,11 +31,23 @@ module Api
       # POST /api/v1/movies
       def create
         @movie = Movie.new(movie_params.except(:poster, :banner))
+        
+        # Log incoming file params for debugging
+        Rails.logger.info "Poster param: #{params[:movie][:poster].inspect}"
+        Rails.logger.info "Banner param: #{params[:movie][:banner].inspect}"
 
-        attach_movie_files(@movie)
+        if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
+          @movie.poster.attach(params[:movie][:poster])
+          Rails.logger.info "Poster attached: #{@movie.poster.attached?}"
+        end
+
+        if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
+          @movie.banner.attach(params[:movie][:banner])
+          Rails.logger.info "Banner attached: #{@movie.banner.attached?}"
+        end
 
         if @movie.save
-          notify_new_movie(@movie)
+          notify_new_movie(@movie) # Call notification method
           render json: {
             message: "Movie created successfully",
             movie: ActiveModelSerializers::SerializableResource.new(@movie, serializer: MovieSerializer)
@@ -48,7 +61,21 @@ module Api
       # PATCH/PUT /api/v1/movies/:id
       def update
         if @movie.update(movie_params.except(:poster, :banner))
-          attach_movie_files(@movie)
+          # Log incoming file params for debugging
+          Rails.logger.info "Poster param: #{params[:movie][:poster].inspect}"
+          Rails.logger.info "Banner param: #{params[:movie][:banner].inspect}"
+
+          if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
+            @movie.poster.purge
+            @movie.poster.attach(params[:movie][:poster])
+            Rails.logger.info "Poster updated: #{@movie.poster.attached?}"
+          end
+
+          if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
+            @movie.banner.purge
+            @movie.banner.attach(params[:movie][:banner])
+            Rails.logger.info "Banner updated: #{@movie.banner.attached?}"
+          end
 
           render json: @movie, serializer: MovieSerializer, status: :ok
         else
@@ -93,31 +120,14 @@ module Api
         )
       end
 
-      def filter_movies(movies)
-        movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
-        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
-        movies
-      end
-
-      def attach_movie_files(movie)
-        if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
-          movie.poster.attach(params[:movie][:poster])
-          Rails.logger.debug "Poster attached: #{movie.poster.attached?}"
-        end
-
-        if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
-          movie.banner.attach(params[:movie][:banner])
-          Rails.logger.debug "Banner attached: #{movie.banner.attached?}"
-        end
-      end
-
       def authorize_admin_or_supervisor!
         unless current_user&.admin? || current_user&.supervisor?
-          render json: { error: "Unauthorized" }, status: :unauthorized
+          render json: { error: "Unauthorized" }, status: :Kalunauthorized
         end
       end
 
       def notify_new_movie(movie)
+        # Find users eligible for notifications
         users = User.where(notifications_enabled: true).where.not(device_token: [nil, ""])
         return if users.empty?
 

@@ -5,21 +5,14 @@ Rails.application.configure do
 
   config.action_controller.default_url_options = { host: 'localhost:3000' }
   config.action_mailer.default_url_options = { host: 'localhost:3000' }
-  # Settings specified here will take precedence over those in config/application.rb.
+  Rails.application.routes.default_url_options = {host: 'localhost:3000'}
+
 
   # In the development environment your application's code is reloaded any time
   # it changes. This slows down response time but is perfect for development
   # since you don't have to restart the web server when you make code changes.
   config.enable_reloading = true
   # env.cache = ActiveSupport::Cache::NullStore.new
-  config.after_initialize do
-    Bullet.enable = true
-    Bullet.alert = true          # pop-up browser alerts
-    Bullet.bullet_logger = true  # logs to bullet.log
-    Bullet.console = true        # logs to browser console
-    Bullet.rails_logger = true   # logs to Rails log
-  end
-  
 
   # Do not eager load code on boot.
   config.eager_load = false

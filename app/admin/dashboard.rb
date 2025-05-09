@@ -1,60 +1,35 @@
-# ActiveAdmin.register_page "Dashboard" do
-#   menu priority: 1, label: proc { I18n.t("active_admin.dashboard") }
-
-#   content title: proc { I18n.t("active_admin.dashboard") } do
-#     columns do
-#       # User Statistics
-#       column do
-#         panel "User Statistics" do
-#           ul do
-#             li "Total Users: #{User.count}"
-#             li "Regular Users: #{User.where(role: 'user').count}"
-#             li "Supervisors: #{User.where(role: 'supervisor').count}"
-#           end
-#         end
-#       end
-
-#       # Admin Statistics
-#       column do
-#         panel "Admin Statistics" do
-#           ul do
-#             li "Total Admins: #{AdminUser.count}"
-#           end
-#         end
-#       end
-#     end
-#   end
-# end
-# frozen_string_literal: true
 ActiveAdmin.register_page "Dashboard" do
   menu priority: 1, label: proc { I18n.t("active_admin.dashboard") }
 
   content title: proc { I18n.t("active_admin.dashboard") } do
-    div class: "blank_slate_container", id: "dashboard_default_message" do
-      span class: "blank_slate" do
-        span I18n.t("active_admin.dashboard_welcome.welcome")
-        small I18n.t("active_admin.dashboard_welcome.call_to_action")
+    columns do
+      column do
+        panel "Platform Metrics" do
+          para "Total Users: #{User.count}"
+          para "Premium Movies: #{Movie.where(premium: true).count}"
+          para "Active Admins: #{AdminUser.where(role: 'admin').count}"
+        end
+      end
+
+      column do
+        panel "Recently Added Movies" do
+          ul do
+            Movie.order(created_at: :desc).limit(5).map do |movie|
+              li link_to("#{movie.title} (#{movie.language})", admin_movie_path(movie))
+            end
+          end
+        end
       end
     end
 
-    # Here is an example of a simple dashboard with columns and panels.
-    #
-    # columns do
-    #   column do
-    #     panel "Recent Posts" do
-    #       ul do
-    #         Post.recent(5).map do |post|
-    #           li link_to(post.title, admin_post_path(post))
-    #         end
-    #       end
-    #     end
-    #   end
-
-    #   column do
-    #     panel "Info" do
-    #       para "Welcome to ActiveAdmin."
-    #     end
-    #   end
-    # end
-  end # content
+    columns do
+      column do
+        panel "Top Genres by Movie Count" do
+          Genre.left_joins(:movies).group(:name).order('COUNT(movies.id) DESC').limit(5).map do |genre|
+            para "#{genre.name}: #{genre.movies.count} movies"
+          end
+        end
+      end
+    end
+  end
 end
