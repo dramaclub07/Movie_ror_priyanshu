@@ -1,14 +1,11 @@
 ActiveAdmin.register Movie do
-  permit_params :title, :genre_id, :release_year, :director, :duration, :description,
-                :premium, :poster, :banner, :main_lead, :rating, :streaming_platform
+  permit_params :title, :genre, :release_year, :director, :duration, :description, :premium, :poster, :banner, :main_lead,:rating, :streaming_platform
 
   index do
     selectable_column
     id_column
     column :title
-    column :language
-    column :imdb_rating
-    column :certificate
+    column :genre
     column :release_year
     column :director
     column :duration
@@ -17,31 +14,26 @@ ActiveAdmin.register Movie do
     column :main_lead
     column :streaming_platform
     column :rating
-
     column :poster do |movie|
-      if movie.poster.attached? && movie.poster.blob.present?
+      if movie.poster.attached?
         image_tag cl_image_path(movie.poster.key, width: 100, crop: :fill), alt: "Poster"
       else
-        status_tag("No Poster", :warning)
+        "No Poster"
       end
     end
-
     column :banner do |movie|
-      if movie.banner.attached? && movie.banner.blob.present?
+      if movie.banner.attached?
         image_tag cl_image_path(movie.banner.key, width: 100, crop: :fill), alt: "Banner"
       else
-        status_tag("No Banner", :warning)
+        "No Banner"
       end
     end
-
     column :poster_url do |movie|
-      movie.poster.attached? && movie.poster.blob.present? ? cloudinary_url(movie.poster.key) : "N/A"
+      movie.poster.attached? ? cloudinary_url(movie.poster.key) : "N/A"
     end
-
     column :banner_url do |movie|
-      movie.banner.attached? && movie.banner.blob.present? ? cloudinary_url(movie.banner.key) : "N/A"
+      movie.banner.attached? ? cloudinary_url(movie.banner.key) : "N/A"
     end
-
     actions
   end
 
