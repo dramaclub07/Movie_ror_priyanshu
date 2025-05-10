@@ -4,7 +4,6 @@ class JwtService
   ACCESS_TOKEN_EXPIRY = 60.minutes
   REFRESH_TOKEN_EXPIRY = 1.month
 
-  # Generates both access and refresh tokens along with their expiry times
   def self.generate_tokens(user_id)
     access_expiry = ACCESS_TOKEN_EXPIRY.from_now
     refresh_expiry = REFRESH_TOKEN_EXPIRY.from_now
@@ -20,12 +19,11 @@ class JwtService
     }
   end
 
-  # Encodes the payload into a JWT token
+ 
   def self.encode(payload)
     JWT.encode(payload, SECRET_KEY, ALGORITHM)
   end
 
-  # Decodes the JWT token and returns the decoded payload
   def self.decode(token)
     Rails.logger.debug("Decoding token: #{token}") if Rails.env.development?
     # Check blacklist
@@ -47,7 +45,6 @@ class JwtService
     nil
   end
 
-  # Authenticates the token by decoding it and returning the user object
   def self.authenticate_token(token)
     decoded = decode(token)
     return nil unless decoded
@@ -55,7 +52,6 @@ class JwtService
     User.find_by(id: decoded[:user_id])
   end
 
-  # Rotates the refresh token, creating a new one and updating the user's refresh_token
   def self.rotate_refresh_token(user_id)
     payload = { user_id: user_id, exp: REFRESH_TOKEN_EXPIRY.from_now.to_i }
     new_refresh_token = encode(payload)
@@ -64,12 +60,12 @@ class JwtService
     { refresh_token: new_refresh_token }
   end
 
-  # Invalidates the user's refresh token and blacklists both access and refresh tokens
+
   def self.invalidate_tokens(user_id, access_token, refresh_token)
     user = User.find_by(id: user_id)
     user.update(refresh_token: nil) if user
 
-    # Blacklist tokens in database
+
     if access_token
       decoded_access = decode(access_token)
       if decoded_access
@@ -93,7 +89,6 @@ class JwtService
     end
   end
 
-  # Checks if the refresh token has expired
   def self.refresh_token_expired?(token)
     decoded = decode(token)
     return true unless decoded
@@ -101,7 +96,7 @@ class JwtService
     decoded[:exp] < Time.now.to_i
   end
 
-  # Verifies the refresh token and ensures it is not expired and matches the stored token
+
   def self.verify_refresh_token(token)
     return nil if refresh_token_expired?(token)
 

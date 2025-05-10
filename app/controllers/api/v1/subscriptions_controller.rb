@@ -1,175 +1,76 @@
-class Api::V1::SubscriptionsController < ApplicationController
-  before_action :authenticate_user!, except: [:success, :cancel]
-  before_action :set_stripe_api_key # Add this to set the Stripe API key
-  skip_before_action :verify_authenticity_token
+module Api
+  module V1
+    class SubscriptionsController < ApplicationController
+      before_action :authenticate_user!, except: [:success, :cancel]
+      before_action :set_stripe_api_key
+      skip_before_action :verify_authenticity_token
 
-  PLAN_TYPE_OPTIONS = %w[basic premium].freeze
+      def create
+        result = StripeSubscriptionService.create_checkout_session(user: current_user, plan: params[:plan_type])
+        if result.success?
+          render json: {
+            session_id: result.session&.id,
+            url: result.session&.url,
+            subscription: ActiveModelSerializers::SerializableResource.new(result.subscription, serializer: SubscriptionSerializer)
+          }, status: :ok
+        else
+          render json: { error: result.error }, status: :unprocessable_entity
+        end
+      end
 
-  def create
-    plan_type = params[:plan_type]
+      def success
+        result = StripeSubscriptionService.complete_subscription(session_id: params[:session_id])
+        if result.success?
+          render json: {
+            message: 'Subscription activated',
+            subscription: ActiveModelSerializers::SerializableResource.new(result.subscription, serializer: SubscriptionSerializer)
+          }, status: :ok
+        else
+          render json: { error: result.error }, status: :unprocessable_entity
+        end
+      end
 
-    return render_invalid_plan_type unless valid_plan_type?(plan_type)
+      def cancel
+        render json: { message: 'Payment cancelled' }, status: :ok
+      end
 
-    return render_active_subscription_error if active_subscription_exists?
+      def index
+        subscriptions = current_user.subscriptions
+        render json: {
+          subscriptions: ActiveModelSerializers::SerializableResource.new(subscriptions, each_serializer: SubscriptionSerializer)
+        }, status: :ok
+      end
 
-    subscription = create_subscription(plan_type)
-    session = initiate_stripe_checkout(subscription, plan_type)
+      def show
+        subscription = current_user.subscriptions.find_by(id: params[:id])
+        if subscription
+          render json: {
+            subscription: ActiveModelSerializers::SerializableResource.new(subscription, serializer: SubscriptionSerializer)
+          }, status: :ok
+        else
+          render json: { error: 'Subscription not found' }, status: :not_found
+        end
+      end
 
-    render json: { session_id: session.id, url: session.url }, status: :ok
-  end
+      def active
+        subscription = current_user.subscriptions.active.first
+        if subscription
+          render json: {
+            subscription: ActiveModelSerializers::SerializableResource.new(subscription, serializer: SubscriptionSerializer)
+          }, status: :ok
+        else
+          render json: { message: 'No active subscription' }, status: :not_found
+        end
+      end
 
-  def success
-    session = Stripe::Checkout::Session.retrieve(params[:session_id])
-    subscription = find_subscription_by_stripe_customer(session.customer)
+      private
 
-    if subscription
-      finalize_subscription(subscription, session)
-      render json: { message: 'Subscription updated successfully' }, status: :ok
-    else
-      render json: { error: 'Subscription not found' }, status: :not_found
+      def set_stripe_api_key
+        Stripe.api_key = Rails.application.credentials.dig(:stripe, :secret_key)
+        return if Stripe.api_key
+
+        render json: { error: 'Stripe API key missing' }, status: :internal_server_error
+      end
     end
-  end
-
-  def cancel
-    render json: { message: 'Payment cancelled' }, status: :ok
-  end
-
-  def index
-    render json: { subscriptions: current_user.subscriptions }, status: :ok
-  end
-
-  def show
-    subscription = current_user.subscriptions.find_by(id: params[:id])
-
-    if subscription
-      render json: { subscription: subscription }, status: :ok
-    else
-      render json: { error: 'Subscription not found' }, status: :not_found
-    end
-  end
-
-  def active
-    subscription = current_user.subscriptions.find_by(status: 'active')
-
-    if subscription
-      render json: subscription_details(subscription), status: :ok
-    else
-      render json: { message: 'No active subscription found' }, status: :not_found
-    end
-  end
-
-  private
-
-  def set_stripe_api_key
-    Stripe.api_key = Rails.application.credentials.dig(:stripe, :secret_key)
-    unless Stripe.api_key
-      render json: { error: 'Stripe API key is missing. Please set it in credentials.' }, status: :internal_server_error
-      return
-    end
-  end
-
-  def valid_plan_type?(plan_type)
-    PLAN_TYPE_OPTIONS.include?(plan_type)
-  end
-
-  def render_invalid_plan_type
-    render json: { error: 'Invalid plan type. Choose basic or premium.' }, status: :bad_request
-  end
-
-  def active_subscription_exists?
-    current_user.subscriptions.exists?(status: 'active')
-  end
-
-  def render_active_subscription_error
-    render json: { error: 'You already have an active subscription.' }, status: :unprocessable_entity
-  end
-
-  def create_subscription(plan_type)
-    start_date = Date.today
-    end_date = start_date + 30.days
-
-    current_user.subscriptions.create!(
-      plan_type: plan_type,
-      status: 'pending',
-      start_date: start_date,
-      end_date: end_date
-    )
-  end
-
-  def initiate_stripe_checkout(subscription, plan_type)
-    price_id = fetch_price_id(plan_type)
-    customer_id = find_or_create_stripe_customer(subscription)
-
-    Stripe::Checkout::Session.create(
-      customer: customer_id,
-        payment_method_types: ['card'],
-      line_items: [{
-        price: price_id,
-        quantity: 1
-      }],
-      mode: 'subscription',
-      metadata: { subscription_id: subscription.id, plan_type: plan_type },
-      success_url: success_url(subscription),
-      cancel_url: cancel_url
-    )
-  end
-
-  def fetch_price_id(plan_type)
-    case plan_type
-    when 'basic'
-      'price_1RJzzhPwmKg08vVsikRVrObY' 
-    when 'premium'
-      'price_1RK00OPwmKg08vVsRalzKgtr'
-    end
-  end
-
-  # Success URL after Stripe checkout
-  def success_url(subscription)
-    "http://localhost:3000/api/v1/subscriptions/success?session_id={CHECKOUT_SESSION_ID}"
-  end
-
-  # Cancel URL if the user cancels the payment
-  def cancel_url
-    "http://localhost:3000/api/v1/subscriptions/cancel"
-  end
-
-  # Find or create a Stripe customer for the user
-  def find_or_create_stripe_customer(subscription)
-    if subscription.stripe_customer_id.nil?
-      customer = Stripe::Customer.create(email: current_user.email)
-      subscription.update(stripe_customer_id: customer.id)
-      customer.id
-    else
-      subscription.stripe_customer_id
-    end
-  end
-
-  # Find a subscription by the Stripe customer ID
-  def find_subscription_by_stripe_customer(customer_id)
-    Subscription.find_by(stripe_customer_id: customer_id)
-  end
-
-  # Finalize the subscription after Stripe checkout success
-  def finalize_subscription(subscription, session)
-    stripe_subscription = Stripe::Subscription.retrieve(session.subscription)
-
-    # Update the subscription to 'active' once the user successfully completes checkout
-    subscription.update!(
-      stripe_subscription_id: session.subscription,
-      status: 'active',
-      start_date: Time.at(stripe_subscription.start_date).to_date,
-      end_date: Time.at(stripe_subscription.current_period_end).to_date
-    )
-  end
-
-  # Subscription details to send as JSON response
-  def subscription_details(subscription)
-    {
-      plan_type: subscription.plan_type,
-      start_date: subscription.start_date,
-      end_date: subscription.end_date,
-      stripe_subscription_id: subscription.stripe_subscription_id,
-      status: subscription.status
-    }
   end
 end

@@ -1,4 +1,3 @@
-# app/models/user.rb
 class User < ApplicationRecord
   devise :database_authenticatable, :registerable, :recoverable, :rememberable, :validatable,
          :omniauthable, omniauth_providers: [:google_oauth2]
@@ -8,8 +7,6 @@ class User < ApplicationRecord
 
   # Associations
   has_many :subscriptions, dependent: :destroy
-  has_many :movies, through: :subscriptions
-
   has_many :watchlists, dependent: :destroy
   has_many :watchlist_movies, through: :watchlists, source: :movie
 
@@ -18,6 +15,7 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true
   validates :phone_number, presence: true, uniqueness: true,
             format: { with: /\A\+?\d{10,14}\z/, message: 'must be a valid phone number' }
+  validates :stripe_customer_id, uniqueness: true, allow_nil: true
 
   # Callbacks
   after_initialize :set_default_role, if: :new_record?
@@ -33,13 +31,13 @@ class User < ApplicationRecord
   end
 
   def self.ransackable_attributes(auth_object = nil)
-    %w[id name email phone_number role created_at updated_at]
+    %w[id name email phone_number role created_at updated_at stripe_customer_id]
   end
 
   def self.ransackable_associations(auth_object = nil)
-    %w[subscriptions movies]
+    %w[subscriptions watchlists watchlist_movies]
   end
-  
+
   def generate_otp
     otp = SecureRandom.random_number(100_000..999_999)
     update(otp: otp, otp_expires_at: 10.minutes.from_now)
@@ -50,25 +48,22 @@ class User < ApplicationRecord
     self.otp == otp && otp_expires_at > Time.now
   end
 
-  def send_email(subject, body)
-    Rails.logger.info "Sending email to #{email}: #{subject} - #{body}"
-  end
-
-  def admin?
-    role == 'admin'
+  def log_email(subject, body)
+    Rails.logger.info "Logging email to #{email}: #{subject} - #{body}"
   end
 
   def supervisor?
     role == 'supervisor'
   end
 
+  # Fix for inspection error
+  def inspect
+    "#<#{self.class} id: #{id}, email: #{email.inspect}, name: #{name.inspect}, role: #{role.inspect}, stripe_customer_id: #{stripe_customer_id.inspect}>"
+  end
+
   private
 
   def set_default_role
     self.role ||= 'user'
-  end
-
-  def social_login?
-    google_id.present? || github_id.present?
   end
 end
