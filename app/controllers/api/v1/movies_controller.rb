@@ -4,7 +4,7 @@ module Api
     class MoviesController < ApplicationController
       skip_before_action :verify_authenticity_token
       skip_before_action :authenticate_user!, only: %i[index show]
-      before_action :authorize_admin_or_supervisor!, only: %i[create update destroy]
+      before_action :authorize_supervisor!, only: %i[create update destroy]
       before_action :set_movie, only: %i[show update destroy]
       before_action :restrict_premium_content, only: %i[index show]
 
@@ -93,9 +93,12 @@ module Api
         )
       end
 
-      def authorize_admin_or_supervisor!
-        return if current_user&.admin? || current_user&.supervisor?
+      def authorize_supervisor!
+        is_supervisor = current_user&.supervisor?
+        Rails.logger.debug "User #{current_user&.id} authorization: supervisor?=#{is_supervisor}, role=#{current_user&.role}"
+        return if is_supervisor
 
+        Rails.logger.warn "Authorization failed for user #{current_user&.id}: role=#{current_user&.role}"
         render json: { error: 'Unauthorized' }, status: :unauthorized
       end
 
