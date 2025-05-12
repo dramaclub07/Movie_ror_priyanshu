@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ActiveAdmin.register Subscription do
   permit_params :user_id, :plan_type, :status
 

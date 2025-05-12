@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddStartDateToSubscriptions < ActiveRecord::Migration[7.1]
   def change
     add_column :subscriptions, :start_date, :datetime

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # ActiveAdmin.setup do |config|
 #   config.site_title = "Movie Explorer App"
 #   config.register_stylesheet 'active_admin.css'

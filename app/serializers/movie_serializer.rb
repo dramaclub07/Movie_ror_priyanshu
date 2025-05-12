@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class MovieSerializer < ActiveModel::Serializer
   attributes :id, :title, :release_year, :rating, :director, :duration,
              :description, :main_lead, :streaming_platform, :premium,

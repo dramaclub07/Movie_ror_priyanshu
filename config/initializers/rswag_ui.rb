@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Minimal Rswag UI initializer compatible with current version
 Rswag::Ui.configure do |c|
   # Specify the OpenAPI/Swagger docs to display in the UI

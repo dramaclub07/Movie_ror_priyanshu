@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class BlacklistedToken < ApplicationRecord
   validates :token, presence: true, uniqueness: true
   validates :expires_at, presence: true

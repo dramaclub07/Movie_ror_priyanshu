@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class ApplicationController < ActionController::Base
   protect_from_forgery with: :null_session
   skip_before_action :verify_authenticity_token, if: :json_request?
@@ -5,7 +7,9 @@ class ApplicationController < ActionController::Base
   include Devise::Controllers::Helpers
 
   before_action :authenticate_user_from_token, if: :api_request?
-  before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' || user_signed_in? || skip_authentication? }
+  before_action :authenticate_user!, unless: lambda {
+    admin_request? || request.path == '/frontend' || user_signed_in? || skip_authentication?
+  }
 
   def frontend
     render file: Rails.root.join('public', 'index.html'), layout: false

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # Rails.application.routes.draw do
 #   mount Rswag::Ui::Engine => '/api-docs'
 #   mount Rswag::Api::Engine => '/api-docs'
@@ -66,13 +68,13 @@ Rails.application.routes.draw do
       put 'profile', to: 'auth#update_profile'
 
       # Genre routes
-      resources :genres, only: [:index, :show, :create, :update, :destroy]
+      resources :genres, only: %i[index show create update destroy]
 
       # Movie routes
-      resources :movies, only: [:index, :show, :create, :update, :destroy]
+      resources :movies, only: %i[index show create update destroy]
 
       # Subscription routes
-      resources :subscriptions, only: [:index, :show, :create] do
+      resources :subscriptions, only: %i[index show create] do
         get 'success', on: :collection
         get 'cancel', on: :collection
         get 'active', on: :collection

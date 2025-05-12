@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'swagger_helper'
 
 RSpec.describe 'Auth API' do
@@ -138,7 +140,10 @@ RSpec.describe 'Auth API' do
       }
 
       response '200', 'user signed in' do
-        let(:user_record) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:user_record) do
+          create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User',
+                        phone_number: '7890123456', role: 'user')
+        end
         let(:user) do
           {
             user: {
@@ -203,7 +208,10 @@ RSpec.describe 'Auth API' do
       end
 
       response '401', 'invalid credentials' do
-        let(:user_record) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:user_record) do
+          create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User',
+                        phone_number: '7890123456', role: 'user')
+        end
         let(:user) do
           {
             user: {
@@ -323,7 +331,10 @@ RSpec.describe 'Auth API' do
       produces 'application/json'
 
       response '200', 'signed out successfully' do
-        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:user) do
+          create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User',
+                        phone_number: '7890123456', role: 'user')
+        end
         let(:jwt_token) do
           tokens = JwtService.generate_tokens(user.id)
           user.update!(refresh_token: tokens[:refresh_token])
@@ -354,7 +365,10 @@ RSpec.describe 'Auth API' do
       security []
 
       response '200', 'tokens refreshed' do
-        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:user) do
+          create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User',
+                        phone_number: '7890123456', role: 'user')
+        end
         let(:refresh_token) do
           tokens = JwtService.generate_tokens(user.id)
           user.update!(refresh_token: tokens[:refresh_token])

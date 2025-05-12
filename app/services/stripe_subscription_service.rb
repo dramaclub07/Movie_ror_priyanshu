@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module StripeSubscriptionService
   PLANS = {
     basic: { price: nil, interval: nil },

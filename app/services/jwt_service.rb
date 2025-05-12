@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class JwtService
   SECRET_KEY = Rails.application.credentials.jwt_secret_key || Rails.application.credentials.secret_key_base
   ALGORITHM = 'HS256'
@@ -55,13 +57,13 @@ class JwtService
     payload = { user_id: user_id, exp: REFRESH_TOKEN_EXPIRY.from_now.to_i }
     new_refresh_token = encode(payload)
     user = User.find_by(id: user_id)
-    user.update(refresh_token: new_refresh_token) if user
+    user&.update(refresh_token: new_refresh_token)
     { refresh_token: new_refresh_token }
   end
 
   def self.invalidate_tokens(user_id, access_token, refresh_token)
     user = User.find_by(id: user_id)
-    user.update(refresh_token: nil) if user
+    user&.update(refresh_token: nil)
 
 
     if access_token

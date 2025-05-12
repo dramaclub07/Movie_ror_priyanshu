@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class UpdateUserRoles < ActiveRecord::Migration[7.1]
   def up
     User.where(role: '0').update_all(role: 'user')

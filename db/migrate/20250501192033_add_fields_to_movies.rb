@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddFieldsToMovies < ActiveRecord::Migration[7.1]
   def change
     add_column :movies, :title, :string unless column_exists?(:movies, :title)

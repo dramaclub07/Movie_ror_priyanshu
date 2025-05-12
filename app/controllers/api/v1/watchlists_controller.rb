@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # app/controllers/api/v1/watchlist_controller.rb
 module Api
   module V1

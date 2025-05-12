@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module Api
   module V1
     class AuthController < ApplicationController
@@ -74,9 +76,7 @@ module Api
       def logout
         access_token = cookies[:access_token] || extract_token
         refresh_token = cookies[:refresh_token]
-        if current_user && access_token
-          JwtService.invalidate_tokens(current_user.id, access_token, refresh_token)
-        end
+        JwtService.invalidate_tokens(current_user.id, access_token, refresh_token) if current_user && access_token
         clear_auth_cookies
         render json: {
           message: 'Successfully signed out',
@@ -105,13 +105,13 @@ module Api
         user_info = JSON.parse(response.body)
 
         user = User.from_omniauth(OpenStruct.new(
-          provider: 'google_oauth2',
-          uid: user_info['sub'],
-          info: OpenStruct.new(
-            email: user_info['email'],
-            name: user_info['name']
-          )
-        ))
+                                    provider: 'google_oauth2',
+                                    uid: user_info['sub'],
+                                    info: OpenStruct.new(
+                                      email: user_info['email'],
+                                      name: user_info['name']
+                                    )
+                                  ))
 
         if user.persisted?
           tokens = generate_auth_tokens(user.id)

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'httparty'
 require 'googleauth'
 
@@ -75,7 +77,7 @@ class FcmService
     end
 
     # Determine overall status
-    failed = responses.select { |r| r[:status_code] != 200 }
+    failed = responses.reject { |r| r[:status_code] == 200 }
     status = failed.empty? ? :ok : :error
     message = failed.empty? ? 'All notifications sent successfully' : "#{failed.count} notifications failed"
 

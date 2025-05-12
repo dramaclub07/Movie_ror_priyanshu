@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AddDeviseToAdminUsers < ActiveRecord::Migration[7.1]
   def change
     # Change from change_table to create_table since the table doesn't exist

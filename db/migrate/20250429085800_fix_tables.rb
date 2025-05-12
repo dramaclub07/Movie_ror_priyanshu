@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class FixTables < ActiveRecord::Migration[7.1]
   def up
     # First, try to remove foreign key constraints if they exist

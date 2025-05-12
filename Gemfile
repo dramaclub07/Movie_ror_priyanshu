@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 source 'https://rubygems.org'
 
 ruby '3.1.4'
@@ -9,12 +11,12 @@ gem 'rails', '~> 7.1.5'
 gem 'pg', '~> 1.5'
 
 # Authentication
+gem 'bcrypt', '~> 3.1.7'
 gem 'devise', '~> 4.9'
 gem 'devise-jwt', '~> 0.11'
+gem 'jwt', '~> 2.8'
 gem 'omniauth', '~> 2.1'
 gem 'omniauth-google-oauth2', '~> 1.1'
-gem 'jwt', '~> 2.8'
-gem 'bcrypt', '~> 3.1.7'
 
 # API and serialization
 gem 'active_model_serializers', '~> 0.10'
@@ -54,8 +56,8 @@ gem 'bootsnap', '~> 1.18', require: false
 gem 'dotenv-rails', '~> 3.1'
 
 # HTTP requests
-gem 'httparty', '~> 0.22'
 gem 'googleauth', '~> 1.11'
+gem 'httparty', '~> 0.22'
 
 # Payment processing
 gem 'stripe', '~> 12.0'

@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 class AdminUser < ApplicationRecord
   # Devise modules
   devise :database_authenticatable, :recoverable, :rememberable, :validatable

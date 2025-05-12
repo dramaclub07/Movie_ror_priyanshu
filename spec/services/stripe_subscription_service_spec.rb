@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # spec/services/stripe_subscription_service_spec.rb
 require 'rails_helper'
 

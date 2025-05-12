@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 # db/seeds.rb
 def seed_genres
   genres = [

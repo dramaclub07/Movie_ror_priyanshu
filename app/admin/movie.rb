@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 ActiveAdmin.register Movie do
   permit_params :title, :genre, :release_year, :director, :duration, :description, :premium, :poster, :banner,
                 :main_lead, :rating, :streaming_platform
