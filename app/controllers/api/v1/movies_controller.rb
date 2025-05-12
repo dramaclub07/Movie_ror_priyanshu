@@ -1,15 +1,18 @@
+# app/controllers/api/v1/movies_controller.rb
 module Api
   module V1
     class MoviesController < ApplicationController
       skip_before_action :verify_authenticity_token
-      skip_before_action :authenticate_user!, only: [:index, :show]
-      before_action :authorize_admin_or_supervisor!, only: [:create, :update, :destroy]
-      before_action :set_movie, only: [:show, :update, :destroy]
+      skip_before_action :authenticate_user!, only: %i[index show]
+      before_action :authorize_supervisor!, only: %i[create update destroy]
+      before_action :set_movie, only: %i[show update destroy]
+      before_action :restrict_premium_content, only: %i[index show]
 
-      # GET /api/v1/movies
       def index
         movies = Movie.includes(:genre)
-        movies = filter_movies(movies)
+        movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
+        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
+        movies = movies.where(premium: false) unless current_user&.subscriptions&.active&.premium&.exists?
         movies = movies.page(params[:page]).per(10)
 
         render json: {
@@ -22,21 +25,26 @@ module Api
         }, status: :ok
       end
 
-      # GET /api/v1/movies/:id
       def show
-        render json: @movie, serializer: MovieSerializer, status: :ok
+        if @movie.premium && !current_user&.subscriptions&.active&.premium&.exists?
+          render json: { error: 'Premium subscription required' }, status: :forbidden
+        else
+          render json: @movie, serializer: MovieSerializer, status: :ok
+        end
       end
 
-      # POST /api/v1/movies
       def create
         @movie = Movie.new(movie_params.except(:poster, :banner))
-
-        attach_movie_files(@movie)
-
+        if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
+          @movie.poster.attach(params[:movie][:poster])
+        end
+        if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
+          @movie.banner.attach(params[:movie][:banner])
+        end
         if @movie.save
           notify_new_movie(@movie)
           render json: {
-            message: "Movie created successfully",
+            message: 'Movie created successfully',
             movie: ActiveModelSerializers::SerializableResource.new(@movie, serializer: MovieSerializer)
           }, status: :created
         else
@@ -45,11 +53,16 @@ module Api
         end
       end
 
-      # PATCH/PUT /api/v1/movies/:id
       def update
         if @movie.update(movie_params.except(:poster, :banner))
-          attach_movie_files(@movie)
-
+          if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
+            @movie.poster.purge
+            @movie.poster.attach(params[:movie][:poster])
+          end
+          if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
+            @movie.banner.purge
+            @movie.banner.attach(params[:movie][:banner])
+          end
           render json: @movie, serializer: MovieSerializer, status: :ok
         else
           Rails.logger.error "Movie update failed: #{@movie.errors.full_messages}"
@@ -57,14 +70,11 @@ module Api
         end
       end
 
-      # DELETE /api/v1/movies/:id
       def destroy
-        if @movie.subscriptions.exists?
-          render json: { error: 'Cannot delete movie with active subscriptions' }, status: :unprocessable_entity
-        elsif @movie.destroy
-          render json: { message: "Movie deleted successfully" }, status: :ok
+        if @movie.destroy
+          render json: { message: 'Movie deleted successfully' }, status: :ok
         else
-          render json: { error: "Failed to delete movie" }, status: :unprocessable_entity
+          render json: { error: 'Failed to delete movie' }, status: :unprocessable_entity
         end
       end
 
@@ -78,47 +88,26 @@ module Api
 
       def movie_params
         params.require(:movie).permit(
-          :title,
-          :release_year,
-          :rating,
-          :genre_id,
-          :director,
-          :duration,
-          :description,
-          :main_lead,
-          :streaming_platform,
-          :premium,
-          :poster,
-          :banner
+          :title, :release_year, :rating, :genre_id, :director, :duration,
+          :description, :main_lead, :streaming_platform, :premium, :poster, :banner
         )
       end
 
-      def filter_movies(movies)
-        movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
-        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
-        movies
+      def authorize_supervisor!
+        is_supervisor = current_user&.supervisor?
+        Rails.logger.debug "User #{current_user&.id} authorization: supervisor?=#{is_supervisor}, role=#{current_user&.role}"
+        return if is_supervisor
+
+        Rails.logger.warn "Authorization failed for user #{current_user&.id}: role=#{current_user&.role}"
+        render json: { error: 'Unauthorized' }, status: :unauthorized
       end
 
-      def attach_movie_files(movie)
-        if params[:movie][:poster].present? && params[:movie][:poster].is_a?(ActionDispatch::Http::UploadedFile)
-          movie.poster.attach(params[:movie][:poster])
-          Rails.logger.debug "Poster attached: #{movie.poster.attached?}"
-        end
-
-        if params[:movie][:banner].present? && params[:movie][:banner].is_a?(ActionDispatch::Http::UploadedFile)
-          movie.banner.attach(params[:movie][:banner])
-          Rails.logger.debug "Banner attached: #{movie.banner.attached?}"
-        end
-      end
-
-      def authorize_admin_or_supervisor!
-        unless current_user&.admin? || current_user&.supervisor?
-          render json: { error: "Unauthorized" }, status: :unauthorized
-        end
+      def restrict_premium_content
+        # Handled in index and show actions
       end
 
       def notify_new_movie(movie)
-        users = User.where(notifications_enabled: true).where.not(device_token: [nil, ""])
+        users = User.where(notifications_enabled: true).where.not(device_token: [nil, ''])
         return if users.empty?
 
         device_tokens = users.pluck(:device_token)
@@ -126,7 +115,7 @@ module Api
           fcm_service = FcmService.new
           result = fcm_service.send_notification(
             device_tokens,
-            "New Movie Added!",
+            'New Movie Added!',
             "#{movie.title} has been added to the Movie Explorer collection.",
             { movie_id: movie.id.to_s }
           )

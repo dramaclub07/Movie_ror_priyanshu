@@ -4,19 +4,16 @@ module Api
       before_action :set_genre, only: %i[show update destroy]
       before_action :authenticate_user!, except: %i[index show]
       before_action :authorize_supervisor!, only: %i[create update destroy]
-      
-      # GET /api/v1/genres
+
       def index
         @genres = Genre.all
         render json: @genres
       end
 
-      # GET /api/v1/genres/:id
       def show
         render json: @genre.as_json(include: :movies)
       end
 
-      # POST /api/v1/genres
       def create
         @genre = Genre.new(genre_params)
 
@@ -27,7 +24,6 @@ module Api
         end
       end
 
-      # PATCH/PUT /api/v1/genres/:id
       def update
         if @genre.update(genre_params)
           render json: @genre
@@ -36,7 +32,6 @@ module Api
         end
       end
 
-      # DELETE /api/v1/genres/:id
       def destroy
         if @genre.movies.exists?
           render json: { error: 'Cannot delete genre with associated movies' }, status: :unprocessable_entity

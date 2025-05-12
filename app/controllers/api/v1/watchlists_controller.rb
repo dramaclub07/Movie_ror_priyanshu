@@ -14,7 +14,7 @@ module Api
         watchlist = current_user.watchlists.find_or_initialize_by(movie_id: params[:movie_id])
         if watchlist.persisted?
           watchlist.destroy
-          render json: { message: "Movie removed from watchlist" }, status: :ok
+          render json: { message: 'Movie removed from watchlist' }, status: :ok
         else
           watchlist.save!
           render json: watchlist, status: :created
@@ -26,7 +26,7 @@ module Api
       def set_movie
         @movie = Movie.find(params[:movie_id])
       rescue ActiveRecord::RecordNotFound
-        render json: { error: "Movie not found" }, status: :not_found
+        render json: { error: 'Movie not found' }, status: :not_found
       end
     end
   end

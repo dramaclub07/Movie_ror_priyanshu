@@ -12,9 +12,9 @@ def seed_genres
   ]
 
   AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
-  admin.password = 'password'
-  admin.password_confirmation = 'password'
-end
+    admin.password = 'password'
+    admin.password_confirmation = 'password'
+  end
 
 
   genres.each do |genre|

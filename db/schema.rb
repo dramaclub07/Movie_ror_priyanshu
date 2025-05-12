@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_08_060716) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_10_075647) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -87,6 +87,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_08_060716) do
     t.string "name", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "movies_count", default: 0, null: false
     t.index ["name"], name: "index_genres_on_name", unique: true
   end
 
@@ -140,11 +141,13 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_08_060716) do
     t.string "uid"
     t.string "device_token"
     t.boolean "notifications_enabled", default: true
+    t.string "stripe_customer_id"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["github_id"], name: "index_users_on_github_id", unique: true
     t.index ["phone_number"], name: "index_users_on_phone_number", unique: true
     t.index ["refresh_token"], name: "index_users_on_refresh_token", unique: true
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+    t.index ["stripe_customer_id"], name: "index_users_on_stripe_customer_id"
   end
 
   create_table "watchlists", force: :cascade do |t|

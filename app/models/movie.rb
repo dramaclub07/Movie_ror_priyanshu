@@ -1,7 +1,9 @@
 class Movie < ApplicationRecord
+  include Rails.application.routes.url_helpers
+
   has_many :subscriptions
   has_many :users, through: :subscriptions
-  belongs_to :genre
+  belongs_to :genre, counter_cache: true
 
   has_one_attached :poster
   has_one_attached :banner
@@ -9,7 +11,8 @@ class Movie < ApplicationRecord
   has_many :users, through: :watchlists
 
   validates :title, presence: true
-  validates :release_year, presence: true, numericality: { only_integer: true, greater_than: 1880, less_than_or_equal_to: Date.current.year }
+  validates :release_year, presence: true,
+                           numericality: { only_integer: true, greater_than: 1880, less_than_or_equal_to: Date.current.year }
   validates :rating, presence: true, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 10 }
   validates :genre_id, presence: true
   validates :director, presence: true
@@ -28,25 +31,25 @@ class Movie < ApplicationRecord
   scope :with_banner, -> { where.associated(:banner_attachment) }
   scope :without_banner, -> { where.missing(:banner_attachment) }
 
+
   def poster_url
-    poster.blob.service_url if poster.attached?
-  rescue => e
-    Rails.logger.error "Failed to generate poster URL for movie #{id}: #{e.message}"
-    nil
+    return unless poster.attached?
+
+    poster.service.url(poster.key, eager: true)
   end
 
   def banner_url
-    banner.blob.service_url if banner.attached?
-  rescue => e
-    Rails.logger.error "Failed to generate banner URL for movie #{id}: #{e.message}"
-    nil
+    return unless banner.attached?
+
+    banner.service.url(banner.key, eager: true)
   end
 
-  def self.ransackable_attributes(auth_object = nil)
-    %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium created_at updated_at]
+  def self.ransackable_attributes(_auth_object = nil)
+    %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium
+       created_at updated_at]
   end
 
-  def self.ransackable_associations(auth_object = nil)
+  def self.ransackable_associations(_auth_object = nil)
     %w[subscriptions users genre]
   end
 
@@ -62,15 +65,17 @@ class Movie < ApplicationRecord
 
   def poster_content_type
     return unless poster.attached?
-    unless poster.blob.content_type.in?(%w[image/jpeg image/png])
-      errors.add(:poster, 'must be a JPEG or PNG')
-    end
+
+    return if poster.blob.content_type.in?(%w[image/jpeg image/png])
+
+    errors.add(:poster, 'must be a JPEG or PNG')
   end
 
   def banner_content_type
     return unless banner.attached?
-    unless banner.blob.content_type.in?(%w[image/jpeg image/png])
-      errors.add(:banner, 'must be a JPEG or PNG')
-    end
+
+    return if banner.blob.content_type.in?(%w[image/jpeg image/png])
+
+    errors.add(:banner, 'must be a JPEG or PNG')
   end
 end

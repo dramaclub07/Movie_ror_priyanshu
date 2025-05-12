@@ -3,8 +3,8 @@ class AddDeviseToAdminUsers < ActiveRecord::Migration[7.1]
     # Change from change_table to create_table since the table doesn't exist
     create_table :admin_users do |t|
       ## Database authenticatable
-      t.string :email,              null: false, default: ""
-      t.string :encrypted_password, null: false, default: ""
+      t.string :email,              null: false, default: ''
+      t.string :encrypted_password, null: false, default: ''
 
       ## Recoverable
       t.string   :reset_password_token
@@ -21,7 +21,7 @@ class AddDeviseToAdminUsers < ActiveRecord::Migration[7.1]
       t.string   :last_sign_in_ip
 
       ## Add role column for admin/supervisor
-      t.string :role, default: "admin"
+      t.string :role, default: 'admin'
 
       t.timestamps null: false
     end

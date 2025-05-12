@@ -24,4 +24,4 @@ ActiveAdmin.register Subscription do
     end
     f.actions
   end
-end 
+end

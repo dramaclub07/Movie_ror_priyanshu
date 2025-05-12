@@ -2,65 +2,95 @@ source 'https://rubygems.org'
 
 ruby '3.1.4'
 
-gem 'activeadmin'
-gem 'active_model_serializers'
-gem 'activestorage'
-gem 'bcrypt', '~> 3.1.7'
-gem 'bootsnap', require: false
-gem 'cancancan'
+# Rails framework
+gem 'rails', '~> 7.1.5'
+
+# Database
+gem 'pg', '~> 1.5'
+
+# Authentication
 gem 'devise', '~> 4.9'
-gem 'devise-jwt'
-gem 'dotenv-rails'
-gem 'faker', group: %i[development test]
-# gem 'fcm'
-gem 'importmap-rails'
-gem 'jbuilder'
-gem 'jwt'
-gem 'kamal', require: false
-gem 'omniauth'
-gem 'omniauth-google-oauth2'
-gem 'pg', '~> 1.1'
-gem 'phonelib'
-# gem 'propshaft'
-gem 'puma', '~> 6.0'
-gem 'rack-cors'
-gem 'rails', '~> 7.1.5', '>= 7.1.5.1'
-gem 'rswag'
-gem 'rswag-api'
-gem 'rswag-specs'
-gem 'rswag-ui'
-gem 'sassc-rails'
-gem 'sprockets-rails'
-gem 'stimulus-rails'
-gem 'stripe'
-gem 'thruster', require: false
-gem 'turbo-rails'
-gem 'twilio-ruby'
+gem 'devise-jwt', '~> 0.11'
+gem 'omniauth', '~> 2.1'
+gem 'omniauth-google-oauth2', '~> 1.1'
+gem 'jwt', '~> 2.8'
+gem 'bcrypt', '~> 3.1.7'
+
+# API and serialization
+gem 'active_model_serializers', '~> 0.10'
+gem 'jbuilder', '~> 2.12'
+gem 'rswag', '~> 2.16'
+gem 'rswag-api', '~> 2.16'
+gem 'rswag-specs', '~> 2.16'
+gem 'rswag-ui', '~> 2.16'
+
+# Admin interface
+gem 'activeadmin', '~> 3.2'
+
+# Authorization
+gem 'cancancan', '~> 3.6'
+
+# File storage
+gem 'activestorage', '~> 7.1'
+gem 'cloudinary', '~> 1.28'
+
+# Phone number validation
+gem 'phonelib', '~> 0.8'
+
+# Web server
+gem 'puma', '~> 6.4'
+
+# Asset management
+gem 'importmap-rails', '~> 2.0'
+gem 'sassc-rails', '~> 2.1'
+gem 'sprockets-rails', '~> 3.5'
+gem 'stimulus-rails', '~> 1.3'
+gem 'turbo-rails', '~> 2.0'
+
+# Performance
+gem 'bootsnap', '~> 1.18', require: false
+
+# Environment variables
+gem 'dotenv-rails', '~> 3.1'
+
+# HTTP requests
+gem 'httparty', '~> 0.22'
+gem 'googleauth', '~> 1.11'
+
+# Payment processing
+gem 'stripe', '~> 12.0'
+
+# SMS integration
+gem 'twilio-ruby', '~> 7.2'
+
+# CORS
+gem 'rack-cors', '~> 2.0'
+
+# Deployment
+gem 'kamal', '~> 2.0', require: false
+gem 'thruster', '~> 0.1', require: false
+
+# Timezone data for Windows
 gem 'tzinfo-data', platforms: %i[windows jruby]
-gem 'cloudinary'
-gem 'httparty'
-gem 'googleauth'
-# gem 'activestorage-cloudinary'
 
 group :development, :test do
-  gem 'brakeman', require: false
-  gem 'database_cleaner-active_record'
-  gem 'debug', platforms: %i[mri windows], require: 'debug/prelude'
-  gem 'factory_bot_rails'
-  # gem 'faker'
-  gem 'rspec-rails', '~> 6.0.0'
-  gem 'rubocop', '~> 1.0' # Added Rubocop for code linting
-  gem 'rubocop-rails-omakase', require: false # Added Rails-specific Rubocop config
-  gem 'shoulda-matchers'
+  gem 'brakeman', '~> 6.1', require: false
+  gem 'database_cleaner-active_record', '~> 2.1'
+  gem 'debug', '~> 1.9', platforms: %i[mri windows], require: 'debug/prelude'
+  gem 'factory_bot_rails', '~> 6.4'
+  gem 'faker', '~> 3.4'
+  gem 'rspec-rails', '~> 6.0'
+  gem 'rubocop', '~> 1.64', require: false
+  gem 'rubocop-rails-omakase', '~> 1.0', require: false
+  gem 'shoulda-matchers', '~> 6.2'
 end
 
 group :development do
-  gem 'web-console'
+  gem 'web-console', '~> 4.2'
 end
 
 group :test do
-  gem 'capybara'
-  gem 'selenium-webdriver'
+  gem 'capybara', '~> 3.40'
+  gem 'selenium-webdriver', '~> 4.23'
   gem 'simplecov', '~> 0.22', require: false
 end
-

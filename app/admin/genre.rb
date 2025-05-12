@@ -20,4 +20,4 @@ ActiveAdmin.register Genre do
     end
     f.actions
   end
-end 
+end
