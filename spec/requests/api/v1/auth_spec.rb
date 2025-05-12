@@ -25,7 +25,7 @@ RSpec.describe 'Auth API' do
       }
 
       response '201', 'user created' do
-        let(:user_params) do
+        let(:user) do
           {
             user: {
               email: "newuser_#{SecureRandom.hex(4)}@example.com",
@@ -87,18 +87,18 @@ RSpec.describe 'Auth API' do
                  }
                }
         run_test! do
-          post '/api/v1/register', params: user_params, as: :json
+          post '/api/v1/register', params: user, as: :json
         end
       end
 
       response '422', 'invalid request' do
-        let(:user_params) do
+        let(:user) do
           {
             user: {
               email: 'invalid',
               password: 'short',
               password_confirmation: 'different',
-              phone_number: '1234567890', # Invalid, starts with 1
+              phone_number: '1234567890',
               name: ''
             }
           }
@@ -111,7 +111,7 @@ RSpec.describe 'Auth API' do
                  }
                }
         run_test! do
-          post '/api/v1/register', params: user_params, as: :json
+          post '/api/v1/register', params: user, as: :json
         end
       end
     end
@@ -138,11 +138,11 @@ RSpec.describe 'Auth API' do
       }
 
       response '200', 'user signed in' do
-        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
-        let(:user_params) do
+        let(:user_record) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:user) do
           {
             user: {
-              email: user.email,
+              email: user_record.email,
               password: 'Password123'
             }
           }
@@ -198,16 +198,16 @@ RSpec.describe 'Auth API' do
                  }
                }
         run_test! do
-          post '/api/v1/login', params: user_params, as: :json
+          post '/api/v1/login', params: user, as: :json
         end
       end
 
       response '401', 'invalid credentials' do
-        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
-        let(:user_params) do
+        let(:user_record) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:user) do
           {
             user: {
-              email: user.email,
+              email: user_record.email,
               password: 'wrong'
             }
           }
@@ -217,7 +217,7 @@ RSpec.describe 'Auth API' do
                  error: { type: :string }
                }
         run_test! do
-          post '/api/v1/login', params: user_params, as: :json
+          post '/api/v1/login', params: user, as: :json
         end
       end
     end
@@ -342,6 +342,81 @@ RSpec.describe 'Auth API' do
                  }
                }
         run_test!
+      end
+    end
+  end
+
+  path '/api/v1/refresh-token' do
+    post 'Refreshes authentication tokens' do
+      tags 'Authentication'
+      consumes 'application/json'
+      produces 'application/json'
+      security []
+
+      response '200', 'tokens refreshed' do
+        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
+        let(:refresh_token) do
+          tokens = JwtService.generate_tokens(user.id)
+          user.update!(refresh_token: tokens[:refresh_token])
+          tokens[:refresh_token]
+        end
+        before do
+          cookies[:refresh_token] = refresh_token
+        end
+        schema type: :object,
+               properties: {
+                 message: { type: :string },
+                 auth_info: {
+                   type: :object,
+                   properties: {
+                     status: { type: :string },
+                     token_type: { type: :string },
+                     access_token: {
+                       type: :object,
+                       properties: {
+                         present: { type: :boolean },
+                         expires_in: { type: :integer },
+                         expires_at: { type: :integer },
+                         token: { type: :string }
+                       }
+                     },
+                     refresh_token: {
+                       type: :object,
+                       properties: {
+                         present: { type: :boolean },
+                         expires_in: { type: :integer },
+                         expires_at: { type: :integer },
+                         token: { type: :string }
+                       }
+                     },
+                     cookie_info: {
+                       type: :object,
+                       properties: {
+                         access_token_cookie: { type: :string },
+                         refresh_token_cookie: { type: :string },
+                         secure: { type: :boolean },
+                         same_site: { type: :string }
+                       }
+                     }
+                   }
+                 }
+               }
+        run_test! do
+          post '/api/v1/refresh-token', as: :json
+        end
+      end
+
+      response '401', 'invalid refresh token' do
+        before do
+          cookies[:refresh_token] = 'invalid-token'
+        end
+        schema type: :object,
+               properties: {
+                 error: { type: :string }
+               }
+        run_test! do
+          post '/api/v1/refresh-token', as: :json
+        end
       end
     end
   end

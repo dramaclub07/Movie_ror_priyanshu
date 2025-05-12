@@ -1,7 +1,6 @@
 module Api
   module V1
     class AuthController < ApplicationController
-      # Explicitly skip both authentication filters for specified actions
       skip_before_action :authenticate_user!, only: %i[register login google refresh_token logout]
       skip_before_action :authenticate_user_from_token, only: %i[register login google refresh_token logout]
 
@@ -26,21 +25,27 @@ module Api
       end
 
       def login
-        user = User.find_by(email: params.dig(:user, :email) || params[:email])
-        if user&.valid_password?(params.dig(:user, :password) || params[:password])
-          tokens = generate_auth_tokens(user.id)
-          store_auth_tokens(tokens, user)
-
-          render json: {
-            user: serialize_user(user),
-            message: 'User logged in successfully',
-            auth_info: auth_info(tokens, include_tokens: true)
-          }, status: :ok
-        else
-          render json: { error: 'Invalid credentials' }, status: :unauthorized
+        user = User.find_by(email: params.dig(:user, :email))
+        unless user
+          Rails.logger.debug "User not found for email: #{params.dig(:user, :email)}"
+          return render json: { error: 'Invalid credentials' }, status: :unauthorized
         end
+
+        unless user.valid_password?(params.dig(:user, :password))
+          Rails.logger.debug "Invalid password for user: #{user.email}"
+          return render json: { error: 'Invalid credentials' }, status: :unauthorized
+        end
+
+        tokens = generate_auth_tokens(user.id)
+        store_auth_tokens(tokens, user)
+
+        render json: {
+          user: serialize_user(user),
+          message: 'User logged in successfully',
+          auth_info: auth_info(tokens, include_tokens: true)
+        }, status: :ok
       rescue StandardError => e
-        Rails.logger.error "Login error: #{e.message}"
+        Rails.logger.error "Login error: #{e.message}\n#{e.backtrace.join("\n")}"
         render json: { error: 'Server error' }, status: :internal_server_error
       end
 
@@ -61,7 +66,7 @@ module Api
           render json: { error: 'Invalid refresh token' }, status: :unauthorized
         end
       rescue StandardError => e
-        Rails.logger.error "Token refresh error: #{e.message}"
+        Rails.logger.error "Token refresh error: #{e.message}\n#{e.backtrace.join("\n")}"
         clear_auth_cookies
         render json: { error: 'Server error' }, status: :internal_server_error
       end
@@ -81,7 +86,7 @@ module Api
           }
         }, status: :ok
       rescue StandardError => e
-        Rails.logger.error "Logout error: #{e.message}"
+        Rails.logger.error "Logout error: #{e.message}\n#{e.backtrace.join("\n")}"
         render json: { error: 'Server error' }, status: :internal_server_error
       end
 
@@ -100,13 +105,13 @@ module Api
         user_info = JSON.parse(response.body)
 
         user = User.from_omniauth(OpenStruct.new(
-                                    provider: 'google_oauth2',
-                                    uid: user_info['sub'],
-                                    info: OpenStruct.new(
-                                      email: user_info['email'],
-                                      name: user_info['name']
-                                    )
-                                  ))
+          provider: 'google_oauth2',
+          uid: user_info['sub'],
+          info: OpenStruct.new(
+            email: user_info['email'],
+            name: user_info['name']
+          )
+        ))
 
         if user.persisted?
           tokens = generate_auth_tokens(user.id)
@@ -130,7 +135,7 @@ module Api
       def profile
         render json: { user: serialize_user(current_user) }, status: :ok
       rescue StandardError => e
-        Rails.logger.error "Profile error: #{e.message}"
+        Rails.logger.error "Profile error: #{e.message}\n#{e.backtrace.join("\n")}"
         render json: { error: 'Server error' }, status: :internal_server_error
       end
 
@@ -144,7 +149,7 @@ module Api
           render json: { errors: current_user.errors.full_messages }, status: :unprocessable_entity
         end
       rescue StandardError => e
-        Rails.logger.error "Update profile error: #{e.message}"
+        Rails.logger.error "Update profile error: #{e.message}\n#{e.backtrace.join("\n")}"
         render json: { error: 'Server error' }, status: :internal_server_error
       end
 
@@ -181,7 +186,7 @@ module Api
       end
 
       def serialize_user(user)
-        user.attributes.except('encrypted_password', 'refresh_token', 'reset_password_token', 'reset_password_sent_at', 'remember_created_at')
+        UserSerializer.new(user)
       end
 
       def generate_auth_tokens(user_id)
@@ -221,9 +226,22 @@ module Api
 
       def user_params
         permitted = %i[email password password_confirmation phone_number name]
-        params = params[:auth]&.[](:user) || params[:user]
-        raise ActionController::ParameterMissing.new(:user) unless params
-        params.permit(*permitted)
+        # Convert params to hash to avoid ActionController::Parameters issues
+        params_hash = params.to_unsafe_h.with_indifferent_access
+        Rails.logger.debug "Raw params: #{params_hash.inspect}"
+
+        # Try params[:user] first, then params[:auth][:user]
+        user_params = params_hash[:user] || params_hash.dig(:auth, :user)
+        Rails.logger.debug "Extracted user params: #{user_params.inspect}"
+
+        # Ensure user_params is a hash
+        unless user_params.is_a?(Hash)
+          Rails.logger.error "Invalid user params: #{user_params.inspect}"
+          raise ActionController::ParameterMissing, 'user'
+        end
+
+        # Convert to ActionController::Parameters for permitting
+        ActionController::Parameters.new(user_params).permit(*permitted)
       end
     end
   end
