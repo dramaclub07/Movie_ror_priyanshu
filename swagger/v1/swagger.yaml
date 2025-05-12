@@ -2,16 +2,18 @@ openapi: 3.0.1
 info:
   title: Movie Explorer API
   version: v1
-  description: API for managing movies, genres, subscriptions, and user authentication
+  description: API for managing movies, genres, subscriptions, watchlists, and user authentication.
+  contact:
+    name: Support Team
 servers:
   - url: https://movie-ror-priyanshu-singh.onrender.com
-    description: Production server (Render)
+    description: Production server
   - url: http://localhost:3000
     description: Local development server
 paths:
-  "/api/v1/auth/sign_up":
+  /api/v1/register:
     post:
-      summary: User registration
+      summary: Register a new user
       tags:
         - Authentication
       requestBody:
@@ -25,14 +27,19 @@ paths:
                   properties:
                     email:
                       type: string
+                      example: user@example.com
                     password:
                       type: string
+                      example: Password123
                     password_confirmation:
                       type: string
+                      example: Password123
                     phone_number:
                       type: string
+                      example: +1234567890
                     name:
                       type: string
+                      example: John Doe
                   required:
                     - email
                     - password
@@ -43,50 +50,26 @@ paths:
                 - user
       responses:
         '201':
-          description: User created successfully
+          description: User registered successfully
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-                  message:
-                    type: string
-                    example: "User created successfully"
-                  auth_info:
-                    $ref: '#/components/schemas/AuthInfo'
+                $ref: '#/components/schemas/AuthResponse'
         '422':
-          description: Invalid registration request
+          description: Validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-                  debug_info:
-                    type: object
-                    properties:
-                      params:
-                        type: object
-                      validation_errors:
-                        type: object
+                $ref: '#/components/schemas/ValidationErrorResponse'
         '500':
-          description: Registration failed
+          description: Server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Registration failed"
-  "/api/v1/auth/sign_in":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/login:
     post:
-      summary: User login
+      summary: Log in a user
       tags:
         - Authentication
       requestBody:
@@ -100,8 +83,10 @@ paths:
                   properties:
                     email:
                       type: string
+                      example: user@example.com
                     password:
                       type: string
+                      example: Password123
                   required:
                     - email
                     - password
@@ -113,57 +98,22 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-                  subscription:
-                    type: object
-                    properties:
-                      active:
-                        type: boolean
-                        example: true
-                        description: Indicates if the user has an active subscription
-                      plan_type:
-                        type: string
-                        enum: ["basic", "premium"]
-                        nullable: true
-                        description: The subscription plan type, if active
-                      status:
-                        type: string
-                        enum: ["pending", "active", "inactive"]
-                        nullable: true
-                        description: The subscription status, if active
-                    nullable: true
-                    description: Subscription details, null if no active subscription
-                  message:
-                    type: string
-                    example: "Logged in successfully"
-                  auth_info:
-                    $ref: '#/components/schemas/AuthInfo'
+                $ref: '#/components/schemas/AuthResponse'
         '401':
-          description: Unauthorized login attempt
+          description: Invalid credentials
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid email or password"
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Login failed
+          description: Server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Login failed"
-  "/api/v1/auth/google":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/auth/google:
     post:
-      summary: Google authentication
+      summary: Authenticate with Google
       tags:
         - Authentication
       requestBody:
@@ -174,6 +124,7 @@ paths:
               properties:
                 access_token:
                   type: string
+                  example: ya29.a0AfH6...
               required:
                 - access_token
       responses:
@@ -182,41 +133,25 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-                  message:
-                    type: string
-                    example: "Successfully authenticated with Google"
-                  auth_info:
-                    $ref: '#/components/schemas/AuthInfo'
+                $ref: '#/components/schemas/AuthResponse'
         '401':
-          description: Invalid Google token or missing access token
+          description: Invalid Google token
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid Google token"
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Authentication failed
+          description: Server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Authentication failed"
-  "/api/v1/auth/refresh_token":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/refresh-token:
     post:
       summary: Refresh authentication tokens
       tags:
         - Authentication
-      description: Requires the `refresh_token` cookie to be set.
+      description: Requires a valid refresh_token cookie
       responses:
         '200':
           description: Tokens refreshed successfully
@@ -227,7 +162,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Tokens refreshed successfully"
+                    example: Tokens refreshed successfully
                   auth_info:
                     $ref: '#/components/schemas/AuthInfo'
         '401':
@@ -235,27 +170,18 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid refresh token"
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Token refresh failed
+          description: Server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Token refresh failed"
-  "/api/v1/auth/sign_out":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/logout:
     delete:
-      summary: User logout
+      summary: Log out a user
       tags:
         - Authentication
-      description: Invalidates access and refresh tokens, clears cookies, and blacklists tokens in the database to prevent reuse. Requires a valid Bearer token to identify the user.
       security:
         - BearerAuth: []
       responses:
@@ -268,39 +194,31 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Successfully signed out"
+                    example: Successfully signed out
                   auth_info:
                     type: object
                     properties:
                       status:
                         type: string
-                        example: "logged_out"
+                        example: logged_out
                       tokens_cleared:
                         type: boolean
                         example: true
         '401':
-          description: Unauthorized - Ensure a valid Bearer token is provided
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Sign out failed
+          description: Server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Sign out failed"
-  "/api/v1/profile":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/profile:
     get:
-      summary: Get current user profile
+      summary: Retrieve user profile
       tags:
         - Authentication
       security:
@@ -316,21 +234,21 @@ paths:
                   user:
                     $ref: '#/components/schemas/User'
         '401':
-          description: Unauthorized - Ensure a valid Bearer token is provided in the Authorization header
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
-  "/api/v1/update_profile":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
-      summary: Update current user profile
+      summary: Update user profile
       tags:
         - Authentication
-      description: Also accepts PATCH method.
       security:
         - BearerAuth: []
       requestBody:
@@ -344,10 +262,13 @@ paths:
                   properties:
                     email:
                       type: string
+                      example: newemail@example.com
                     phone_number:
                       type: string
+                      example: +1987654321
                     name:
                       type: string
+                      example: Jane Doe
       responses:
         '200':
           description: Profile updated successfully
@@ -360,29 +281,26 @@ paths:
                     $ref: '#/components/schemas/User'
                   message:
                     type: string
-                    example: "Profile updated successfully"
+                    example: Profile updated successfully
         '401':
-          description: Unauthorized - Ensure a valid Bearer token is provided in the Authorization header
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Invalid request
+          description: Validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-  "/api/v1/genres":
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/genres:
     get:
       summary: List all genres
       tags:
@@ -396,6 +314,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Genre'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Create a new genre
       tags:
@@ -413,6 +337,7 @@ paths:
                   properties:
                     name:
                       type: string
+                      example: Action
                   required:
                     - name
               required:
@@ -429,41 +354,34 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized access"
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden (not supervisor/admin)
+          description: Forbidden (requires admin/supervisor role)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized access"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Invalid request
+          description: Validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-  "/api/v1/genres/{id}":
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/genres/{id}:
     get:
-      summary: Fetch a genre by ID
+      summary: Retrieve a genre by ID
       tags:
         - Genres
       parameters:
         - name: id
           in: path
-          description: ID of the genre
+          description: Genre ID
           required: true
           schema:
             type: integer
@@ -488,11 +406,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Genre not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Update a genre
       tags:
@@ -502,7 +422,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the genre to update
+          description: Genre ID
           required: true
           schema:
             type: integer
@@ -517,6 +437,7 @@ paths:
                   properties:
                     name:
                       type: string
+                      example: Comedy
                   required:
                     - name
               required:
@@ -533,42 +454,31 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized access"
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden (not supervisor/admin)
+          description: Forbidden (requires admin/supervisor role)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized access"
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Genre not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Genre not found"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Invalid request
+          description: Validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete a genre
       tags:
@@ -578,7 +488,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the genre to delete
+          description: Genre ID
           required: true
           schema:
             type: integer
@@ -590,42 +500,32 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized access"
+                $ref: '#/components/schemas/ErrorResponse'
         '403':
-          description: Forbidden (not supervisor/admin)
+          description: Forbidden (requires admin/supervisor role)
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized access"
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Genre not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Genre not found"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
           description: Genre has associated movies
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Cannot delete genre with associated movies"
-  "/api/v1/movies":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/movies:
     get:
       summary: List movies
       tags:
@@ -671,6 +571,12 @@ paths:
                         type: integer
                       total_count:
                         type: integer
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Create a new movie
       tags:
@@ -685,54 +591,41 @@ paths:
               properties:
                 movie[title]:
                   type: string
-                  description: Title of the movie
+                  example: Inception
                 movie[release_year]:
                   type: integer
-                  description: Release year of the movie
+                  example: 2010
                 movie[rating]:
                   type: number
                   format: float
-                  description: Rating of the movie (0 to 10)
+                  example: 8.8
                 movie[genre_id]:
                   type: integer
-                  description: |
-                    ID of the genre. Fetch available genres from `/api/v1/genres` to see IDs and names.
-                    Example genres (sorted alphabetically by name):
-                    - 3: Action
-                    - 2: Comedy
-                    - 14: Documentary
-                    - 10: Drama
-                    - 11: Horror
-                    - 12: Romance
-                    - 4: Sci-Fi
-                    - 1: Scienceógico
-                    - 13: Thriller
+                  example: 4
                 movie[director]:
                   type: string
-                  description: Director of the movie
+                  example: Christopher Nolan
                 movie[duration]:
                   type: integer
-                  description: Duration of the movie in minutes
+                  example: 148
                 movie[description]:
                   type: string
-                  description: Description of the movie (max 1000 characters)
+                  example: A thief with the ability to enter dreams...
                 movie[main_lead]:
                   type: string
-                  description: Main lead actor/actress of the movie
+                  example: Leonardo DiCaprio
                 movie[streaming_platform]:
                   type: string
-                  description: Streaming platform (e.g., Amazon, Netflix, Hulu, Disney+, HBO)
+                  example: Netflix
                 movie[premium]:
                   type: boolean
-                  description: Whether the movie is premium
+                  example: true
                 movie[poster]:
                   type: string
                   format: binary
-                  description: Poster image file (JPEG or PNG)
                 movie[banner]:
                   type: string
                   format: binary
-                  description: Banner image file (JPEG or PNG)
               required:
                 - movie[title]
                 - movie[release_year]
@@ -749,39 +642,42 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Movie created successfully"
+                    example: Movie created successfully
                   movie:
                     $ref: '#/components/schemas/Movie'
         '401':
-          description: Unauthorized (not admin/supervisor)
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (requires admin/supervisor role)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Invalid request (e.g., missing required fields or invalid file format)
+          description: Validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
-  "/api/v1/movies/{id}":
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/movies/{id}:
     get:
-      summary: Fetch a movie by ID
+      summary: Retrieve a movie by ID
       tags:
         - Movies
       parameters:
         - name: id
           in: path
-          description: ID of the movie
+          description: Movie ID
           required: true
           schema:
             type: integer
@@ -792,16 +688,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Movie'
+        '403':
+          description: Premium subscription required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Movie not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Movie not found"
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       summary: Update a movie
       tags:
@@ -811,7 +715,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the movie to update
+          description: Movie ID
           required: true
           schema:
             type: integer
@@ -856,36 +760,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/Movie'
         '401':
-          description: Unauthorized (not admin/supervisor)
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (requires admin/supervisor role)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Movie not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Movie not found"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Invalid request
+          description: Validation errors
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  errors:
-                    type: array
-                    items:
-                      type: string
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     delete:
       summary: Delete a movie
       tags:
@@ -895,7 +798,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the movie to delete
+          description: Movie ID
           required: true
           schema:
             type: integer
@@ -909,38 +812,38 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Movie deleted successfully"
+                    example: Movie deleted successfully
         '401':
-          description: Unauthorized (not admin/supervisor)
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden (requires admin/supervisor role)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Movie not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Movie not found"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Movie has active subscriptions
+          description: Failed to delete movie
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Cannot delete movie with active subscriptions"
-  "/api/v1/subscriptions":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/subscriptions:
     get:
       summary: List user subscriptions
       tags:
@@ -964,11 +867,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     post:
       summary: Create a new subscription
       tags:
@@ -983,8 +888,10 @@ paths:
               properties:
                 plan_type:
                   type: string
-                  enum: ["basic", "premium"]
-                  description: Subscription plan type (select from dropdown)
+                  enum:
+                    - basic
+                    - premium
+                  example: premium
               required:
                 - plan_type
       responses:
@@ -999,47 +906,27 @@ paths:
                     type: string
                   url:
                     type: string
-        '400':
-          description: Invalid plan type
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Invalid plan type. Choose basic or premium."
+                  subscription:
+                    $ref: '#/components/schemas/Subscription'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Active subscription exists
+          description: Invalid plan type or active subscription exists
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "You already have an active subscription."
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Stripe API key missing
+          description: Stripe configuration error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Stripe API key is missing. Please set it in credentials."
-  "/api/v1/subscriptions/success":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/subscriptions/success:
     get:
       summary: Handle successful subscription payment
       tags:
@@ -1061,18 +948,22 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Subscription updated successfully"
-        '404':
-          description: Subscription not found
+                    example: Subscription activated
+                  subscription:
+                    $ref: '#/components/schemas/Subscription'
+        '422':
+          description: Failed to complete subscription
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Subscription not found"
-  "/api/v1/subscriptions/cancel":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/subscriptions/cancel:
     get:
       summary: Handle cancelled subscription payment
       tags:
@@ -1087,10 +978,16 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Payment cancelled"
-  "/api/v1/subscriptions/active":
+                    example: Payment cancelled
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/subscriptions/active:
     get:
-      summary: Fetch active subscription
+      summary: Retrieve active subscription
       tags:
         - Subscriptions
       security:
@@ -1101,30 +998,31 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Subscription'
+                type: object
+                properties:
+                  subscription:
+                    $ref: '#/components/schemas/Subscription'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: No active subscription found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "No active subscription found"
-  "/api/v1/subscriptions/{id}":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/subscriptions/{id}:
     get:
-      summary: Fetch a subscription by ID
+      summary: Retrieve a subscription by ID
       tags:
         - Subscriptions
       security:
@@ -1132,7 +1030,7 @@ paths:
       parameters:
         - name: id
           in: path
-          description: ID of the subscription
+          description: Subscription ID
           required: true
           schema:
             type: integer
@@ -1151,73 +1049,20 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Subscription not found
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Subscription not found"
-  "/api/v1/watchlist/{movie_id}":
-    post:
-      summary: Toggle movie in watchlist
-      tags:
-        - Watchlist
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: movie_id
-          in: path
-          description: ID of the movie to toggle in watchlist
-          required: true
-          schema:
-            type: integer
-      responses:
-        '201':
-          description: Movie added to watchlist
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Watchlist'
-        '200':
-          description: Movie removed from watchlist
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Movie removed from watchlist"
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
-        '404':
-          description: Movie not found
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Movie not found"
-  "/api/v1/watchlist":
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/watchlist:
     get:
       summary: List watchlisted movies
       tags:
@@ -1238,14 +1083,65 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/watchlist/{movie_id}:
+    post:
+      summary: Toggle movie in watchlist
+      tags:
+        - Watchlist
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: movie_id
+          in: path
+          description: Movie ID
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Movie added to watchlist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Watchlist'
+        '200':
+          description: Movie removed from watchlist
+          content:
+            application/json:
+              schema:
                 type: object
                 properties:
-                  error:
+                  message:
                     type: string
-                    example: "Unauthorized"
-  "/api/v1/update_device_token":
+                    example: Movie removed from watchlist
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Movie not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/notifications/device-token:
     post:
-      summary: Update user's device token for push notifications
+      summary: Update device token for push notifications
       tags:
         - Notifications
       security:
@@ -1258,8 +1154,7 @@ paths:
               properties:
                 device_token:
                   type: string
-                  description: Device token for FCM push notifications
-                  example: "test_device_token_456"
+                  example: test_device_token_456
               required:
                 - device_token
       responses:
@@ -1272,40 +1167,32 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Device token updated successfully"
+                    example: Device token updated successfully
         '401':
-          description: Unauthorized - Ensure a valid Bearer token is provided
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Invalid request - Device token is missing or invalid
+          description: Device token is required
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Device token is required"
-  "/api/v1/toggle_notifications":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/notifications/toggle:
     post:
-      summary: Toggle push notifications for the user
+      summary: Toggle push notifications
       tags:
         - Notifications
       security:
         - BearerAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties: {}
       responses:
         '200':
           description: Notifications toggled successfully
@@ -1316,33 +1203,29 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Notifications enabled"
+                    example: Notifications enabled
                   notifications_enabled:
                     type: boolean
                     example: true
         '401':
-          description: Unauthorized - Ensure a valid Bearer token is provided
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
-  "/api/v1/notifications/test":
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/v1/notifications/test:
     post:
-      summary: Send a test push notification to the user
+      summary: Send test push notification
       tags:
         - Notifications
       security:
         - BearerAuth: []
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties: {}
       responses:
         '200':
           description: Test notification sent successfully
@@ -1353,31 +1236,25 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "Test notification sent successfully"
+                    example: Test notification sent successfully
         '401':
-          description: Unauthorized - Ensure a valid Bearer token is provided
+          description: Unauthorized
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Unauthorized"
+                $ref: '#/components/schemas/ErrorResponse'
         '422':
-          description: Failed to send test notification
+          description: No device token registered
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "No device token registered"
-                  details:
-                    type: string
-                    example: "1 notifications failed"
-                    nullable: true
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     BearerAuth:
@@ -1398,6 +1275,10 @@ components:
           type: string
         role:
           type: string
+          enum:
+            - user
+            - supervisor
+            - admin
         created_at:
           type: string
           format: date-time
@@ -1409,10 +1290,10 @@ components:
       properties:
         status:
           type: string
-          example: "authenticated"
+          example: authenticated
         token_type:
           type: string
-          example: "Bearer"
+          example: Bearer
         access_token:
           type: object
           properties:
@@ -1455,6 +1336,12 @@ components:
           type: integer
         name:
           type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     Movie:
       type: object
       properties:
@@ -1483,12 +1370,10 @@ components:
           type: boolean
         poster_url:
           type: string
-          # nullable: true
-          description: URL of the movie poster generated by Cloudinary
+          description: Cloudinary-generated poster URL
         banner_url:
           type: string
-          # nullable: true
-          description: URL of the movie banner generated by Cloudinary
+          description: Cloudinary-generated banner URL
         created_at:
           type: string
           format: date-time
@@ -1502,10 +1387,15 @@ components:
           type: integer
         plan_type:
           type: string
-          enum: ["basic", "premium"]
+          enum:
+            - basic
+            - premium
         status:
           type: string
-          enum: ["pending", "active", "inactive"]
+          enum:
+            - pending
+            - active
+            - inactive
         start_date:
           type: string
           format: date
@@ -1536,3 +1426,31 @@ components:
         created_at:
           type: string
           format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        auth_info:
+          $ref: '#/components/schemas/AuthInfo'
+        message:
+          type: string
+          example: User registered successfully
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: An error occurred
+    ValidationErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+security:
+  - BearerAuth: []

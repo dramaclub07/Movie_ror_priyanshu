@@ -19,7 +19,6 @@ class JwtService
     }
   end
 
- 
   def self.encode(payload)
     JWT.encode(payload, SECRET_KEY, ALGORITHM)
   end
@@ -60,7 +59,6 @@ class JwtService
     { refresh_token: new_refresh_token }
   end
 
-
   def self.invalidate_tokens(user_id, access_token, refresh_token)
     user = User.find_by(id: user_id)
     user.update(refresh_token: nil) if user
@@ -77,16 +75,16 @@ class JwtService
       end
     end
 
-    if refresh_token
-      decoded_refresh = decode(refresh_token)
-      if decoded_refresh
-        BlacklistedToken.create!(
-          token: refresh_token,
-          user_id: user_id,
-          expires_at: Time.at(decoded_refresh[:exp])
-        )
-      end
-    end
+    return unless refresh_token
+
+    decoded_refresh = decode(refresh_token)
+    return unless decoded_refresh
+
+    BlacklistedToken.create!(
+      token: refresh_token,
+      user_id: user_id,
+      expires_at: Time.at(decoded_refresh[:exp])
+    )
   end
 
   def self.refresh_token_expired?(token)
@@ -95,7 +93,6 @@ class JwtService
 
     decoded[:exp] < Time.now.to_i
   end
-
 
   def self.verify_refresh_token(token)
     return nil if refresh_token_expired?(token)

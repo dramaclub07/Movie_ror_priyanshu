@@ -59,12 +59,12 @@ RSpec.describe 'api/v1/subscriptions', type: :request do
           plan_type: { type: :string, enum: %w[basic premium] },
           status: { type: :string, enum: %w[active inactive] }
         },
-        required: %w[ plan_type status]
+        required: %w[plan_type status]
       }
 
       response '201', 'subscription created' do
         let(:Authorization) { 'Bearer valid_token' }
-        let(:subscription) { {  plan_type: 'basic', status: 'active' } }
+        let(:subscription) { { plan_type: 'basic', status: 'active' } }
         schema type: :object,
                properties: {
                  id: { type: :integer },

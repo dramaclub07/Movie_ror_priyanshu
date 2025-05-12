@@ -3,10 +3,10 @@ module Api
   module V1
     class MoviesController < ApplicationController
       skip_before_action :verify_authenticity_token
-      skip_before_action :authenticate_user!, only: [:index, :show]
-      before_action :authorize_admin_or_supervisor!, only: [:create, :update, :destroy]
-      before_action :set_movie, only: [:show, :update, :destroy]
-      before_action :restrict_premium_content, only: [:index, :show]
+      skip_before_action :authenticate_user!, only: %i[index show]
+      before_action :authorize_admin_or_supervisor!, only: %i[create update destroy]
+      before_action :set_movie, only: %i[show update destroy]
+      before_action :restrict_premium_content, only: %i[index show]
 
       def index
         movies = Movie.includes(:genre)
@@ -94,9 +94,9 @@ module Api
       end
 
       def authorize_admin_or_supervisor!
-        unless current_user&.admin? || current_user&.supervisor?
-          render json: { error: 'Unauthorized' }, status: :unauthorized
-        end
+        return if current_user&.admin? || current_user&.supervisor?
+
+        render json: { error: 'Unauthorized' }, status: :unauthorized
       end
 
       def restrict_premium_content

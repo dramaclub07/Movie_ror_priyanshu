@@ -14,12 +14,12 @@ class FixTables < ActiveRecord::Migration[7.1]
       END $$;
     SQL
 
-    
+
     drop_table :subscriptions if table_exists?(:subscriptions)
     drop_table :movies if table_exists?(:movies)
     drop_table :genres if table_exists?(:genres)
 
-    
+
     create_table :genres do |t|
       t.string :name, null: false
       t.timestamps

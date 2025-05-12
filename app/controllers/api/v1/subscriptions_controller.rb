@@ -1,7 +1,7 @@
 module Api
   module V1
     class SubscriptionsController < ApplicationController
-      before_action :authenticate_user!, except: [:success, :cancel]
+      before_action :authenticate_user!, except: %i[success cancel]
       before_action :set_stripe_api_key
       skip_before_action :verify_authenticity_token
 
@@ -11,7 +11,8 @@ module Api
           render json: {
             session_id: result.session&.id,
             url: result.session&.url,
-            subscription: ActiveModelSerializers::SerializableResource.new(result.subscription, serializer: SubscriptionSerializer)
+            subscription: ActiveModelSerializers::SerializableResource.new(result.subscription,
+                                                                           serializer: SubscriptionSerializer)
           }, status: :ok
         else
           render json: { error: result.error }, status: :unprocessable_entity
@@ -23,7 +24,8 @@ module Api
         if result.success?
           render json: {
             message: 'Subscription activated',
-            subscription: ActiveModelSerializers::SerializableResource.new(result.subscription, serializer: SubscriptionSerializer)
+            subscription: ActiveModelSerializers::SerializableResource.new(result.subscription,
+                                                                           serializer: SubscriptionSerializer)
           }, status: :ok
         else
           render json: { error: result.error }, status: :unprocessable_entity

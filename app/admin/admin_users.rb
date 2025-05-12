@@ -14,7 +14,7 @@ ActiveAdmin.register AdminUser do
   end
 
   filter :email
-  filter :role, as: :select, collection: ['admin', 'editor', 'viewer']
+  filter :role, as: :select, collection: %w[admin editor viewer]
   filter :created_at
 
   form do |f|
@@ -22,7 +22,7 @@ ActiveAdmin.register AdminUser do
       f.input :email
       f.input :password
       f.input :password_confirmation
-      f.input :role, as: :select, collection: ['admin', 'editor', 'viewer']
+      f.input :role, as: :select, collection: %w[admin editor viewer]
     end
     f.actions
   end

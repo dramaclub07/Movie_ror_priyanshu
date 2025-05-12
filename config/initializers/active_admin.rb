@@ -25,7 +25,7 @@ ActiveAdmin.setup do |config|
   config.current_user_method = :current_admin_user
   config.logout_link_path = :destroy_admin_user_session_path
 
-  config.site_title = "Movie Explorer App Admin"
+  config.site_title = 'Movie Explorer App Admin'
   config.comments = false
   config.batch_actions = true
 end

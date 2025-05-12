@@ -1,6 +1,6 @@
-require_relative "boot"
+require_relative 'boot'
 
-require "rails/all"
+require 'rails/all'
 
 
 # Require the gems listed in Gemfile, including any gems
@@ -18,9 +18,9 @@ module MovieExplorerApp
     # Please, add to the `ignore` list any other `lib` subdirectories that do
     # not contain `.rb` files, or that should not be reloaded or eager loaded.
     # Common ones are `templates`, `generators`, or `middleware`, for example.
-    config.autoload_lib(ignore: %w(assets tasks))
-    config.autoload_paths += %W(#{config.root}/app/services #{config.root}/lib)
-    config.autoload_lib(ignore: %w(assets tasks active_admin.bak))
+    config.autoload_lib(ignore: %w[assets tasks])
+    config.autoload_paths += %W[#{config.root}/app/services #{config.root}/lib]
+    config.autoload_lib(ignore: %w[assets tasks active_admin.bak])
     config.assets.enabled = true # Ensure Sprockets is enabled
 
     # Configuration for the application, engines, and railties goes here.

@@ -5,8 +5,7 @@ class ApplicationController < ActionController::Base
   include Devise::Controllers::Helpers
 
   before_action :authenticate_user_from_token, if: :api_request?
-  
-  before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' || user_signed_in? }
+  before_action :authenticate_user!, unless: -> { admin_request? || request.path == '/frontend' || user_signed_in? || skip_authentication? }
 
   def frontend
     render file: Rails.root.join('public', 'index.html'), layout: false
@@ -16,9 +15,7 @@ class ApplicationController < ActionController::Base
     current_user.present?
   end
 
-  def current_user
-    @current_user
-  end
+  attr_reader :current_user
 
   private
 
@@ -38,7 +35,12 @@ class ApplicationController < ActionController::Base
     request.path.start_with?('/admin')
   end
 
+  def skip_authentication?
+    request.path == '/api/v1/logout'
+  end
+
   def authenticate_user!
+    Rails.logger.debug "Running authenticate_user! for #{request.path}"
     return if user_signed_in?
 
     render json: { error: 'You need to sign in or sign up before continuing.' }, status: :unauthorized
@@ -48,21 +50,20 @@ class ApplicationController < ActionController::Base
     token = extract_token
     return unless token
 
+    Rails.logger.debug "Authenticating token: #{token}"
     begin
       payload = JwtService.decode(token)
       user_id = payload[:user_id] || payload['user_id']
       user = User.find_by(id: user_id)
 
-      if user
-        @current_user = user
-        sign_in(:user, user, store: false) 
-      else
-        raise ActiveRecord::RecordNotFound, "User not found"
-      end
+      raise ActiveRecord::RecordNotFound, 'User not found' unless user
+
+      @current_user = user
+      sign_in(:user, user, store: false)
     rescue JWT::DecodeError => e
       Rails.logger.error "JWT Decode Error: #{e.message}"
       render json: { error: 'Invalid or expired token' }, status: :unauthorized
-    rescue => e
+    rescue StandardError => e
       Rails.logger.error "Authentication Error: #{e.message}"
       render json: { error: 'Authentication failed' }, status: :unauthorized
     end
@@ -72,7 +73,7 @@ class ApplicationController < ActionController::Base
     auth_header = request.headers['Authorization']
     return auth_header.split(' ').last if auth_header.present? && auth_header.start_with?('Bearer ')
 
-    cookies[:access_token] 
+    cookies[:access_token]
   end
 
   def clear_auth_cookies

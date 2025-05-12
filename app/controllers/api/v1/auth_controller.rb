@@ -1,8 +1,9 @@
 module Api
   module V1
     class AuthController < ApplicationController
-      skip_before_action :authenticate_user!, only: %i[register login google refresh_token]
-      before_action :authenticate_user_from_token, except: %i[register login google refresh_token logout]
+      # Explicitly skip both authentication filters for specified actions
+      skip_before_action :authenticate_user!, only: %i[register login google refresh_token logout]
+      skip_before_action :authenticate_user_from_token, only: %i[register login google refresh_token logout]
 
       def register
         user = User.new(user_params)
@@ -66,9 +67,11 @@ module Api
       end
 
       def logout
-        access_token = cookies[:access_token]
+        access_token = cookies[:access_token] || extract_token
         refresh_token = cookies[:refresh_token]
-        JwtService.invalidate_tokens(current_user.id, access_token, refresh_token) if current_user
+        if current_user && access_token
+          JwtService.invalidate_tokens(current_user.id, access_token, refresh_token)
+        end
         clear_auth_cookies
         render json: {
           message: 'Successfully signed out',
@@ -105,18 +108,22 @@ module Api
                                     )
                                   ))
 
-        tokens = generate_auth_tokens(user.id)
-        store_auth_tokens(tokens, user)
+        if user.persisted?
+          tokens = generate_auth_tokens(user.id)
+          store_auth_tokens(tokens, user)
 
-        render json: {
-          user: serialize_user(user),
-          message: 'Successfully authenticated with Google',
-          auth_info: auth_info(tokens, include_tokens: true)
-        }, status: :ok
+          render json: {
+            user: serialize_user(user),
+            message: 'Successfully authenticated with Google',
+            auth_info: auth_info(tokens, include_tokens: true)
+          }, status: :ok
+        else
+          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
+        end
       rescue OAuth2::Error
         render json: { error: 'Invalid Google token' }, status: :unauthorized
       rescue StandardError => e
-        Rails.logger.error "Google auth error: #{e.message}"
+        Rails.logger.error "Google auth error: #{e.message}\n#{e.backtrace.join("\n")}"
         render json: { error: 'Server error' }, status: :internal_server_error
       end
 
@@ -174,7 +181,7 @@ module Api
       end
 
       def serialize_user(user)
-        user.attributes.except('encrypted_password', 'refresh_token')
+        user.attributes.except('encrypted_password', 'refresh_token', 'reset_password_token', 'reset_password_sent_at', 'remember_created_at')
       end
 
       def generate_auth_tokens(user_id)
@@ -208,13 +215,15 @@ module Api
         cookies.delete(:refresh_token, path: '/')
       end
 
+      def extract_token
+        request.headers['Authorization']&.split('Bearer ')&.last
+      end
+
       def user_params
         permitted = %i[email password password_confirmation phone_number name]
-        if params[:auth] && params[:auth][:user]
-          params.require(:auth).require(:user).permit(*permitted)
-        else
-          params.require(:user).permit(*permitted)
-        end
+        params = params[:auth]&.[](:user) || params[:user]
+        raise ActionController::ParameterMissing.new(:user) unless params
+        params.permit(*permitted)
       end
     end
   end

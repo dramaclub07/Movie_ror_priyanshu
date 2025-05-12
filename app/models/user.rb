@@ -14,7 +14,7 @@ class User < ApplicationRecord
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true
   validates :phone_number, presence: true, uniqueness: true,
-            format: { with: /\A\+?\d{10,14}\z/, message: 'must be a valid phone number' }
+                           format: { with: /\A[6789]\d{9}\z/, message: 'must be a valid 10-digit Indian phone number starting with 6, 7, 8, or 9' }
   validates :stripe_customer_id, uniqueness: true, allow_nil: true
 
   # Callbacks
@@ -25,16 +25,16 @@ class User < ApplicationRecord
       user.email = auth.info.email
       user.password = Devise.friendly_token[0, 20]
       user.name = auth.info.name || 'Unknown'
-      user.phone_number = '0000000000' # Default value, can be updated later
+      user.phone_number = '6789012345' # Valid Indian number
       user.role = 'user'
     end
   end
 
-  def self.ransackable_attributes(auth_object = nil)
+  def self.ransackable_attributes(_auth_object = nil)
     %w[id name email phone_number role created_at updated_at stripe_customer_id]
   end
 
-  def self.ransackable_associations(auth_object = nil)
+  def self.ransackable_associations(_auth_object = nil)
     %w[subscriptions watchlists watchlist_movies]
   end
 
