@@ -1,10 +1,10 @@
 module Api
   module V1
     class AuthController < ApplicationController
-      skip_before_action :authenticate_user!, only: %i[sign_up sign_in google refresh_token]
-      before_action :authenticate_user_from_token, except: %i[sign_up sign_in google refresh_token sign_out]
+      skip_before_action :authenticate_user!, only: %i[register login google refresh_token]
+      before_action :authenticate_user_from_token, except: %i[register login google refresh_token logout]
 
-      def sign_up
+      def register
         user = User.new(user_params)
         if user.save
           tokens = generate_auth_tokens(user.id)
@@ -12,25 +12,19 @@ module Api
 
           render json: {
             user: serialize_user(user),
-            message: 'User created successfully',
+            message: 'User registered successfully',
             auth_info: auth_info(tokens, include_tokens: true)
           }, status: :created
         else
           Rails.logger.error "User validation failed: #{user.errors.full_messages}"
-          render json: {
-            errors: user.errors.full_messages,
-            debug_info: {
-              params: user_params.to_h,
-              validation_errors: user.errors.details
-            }
-          }, status: :unprocessable_entity
+          render json: { errors: user.errors.full_messages }, status: :unprocessable_entity
         end
-      rescue => e
-        Rails.logger.error "Sign up error: #{e.message}\n#{e.backtrace.join("\n")}"
-        render json: { error: 'Registration failed' }, status: :internal_server_error
+      rescue StandardError => e
+        Rails.logger.error "Registration error: #{e.message}\n#{e.backtrace.join("\n")}"
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
-      def sign_in
+      def login
         user = User.find_by(email: params.dig(:user, :email) || params[:email])
         if user&.valid_password?(params.dig(:user, :password) || params[:password])
           tokens = generate_auth_tokens(user.id)
@@ -38,15 +32,15 @@ module Api
 
           render json: {
             user: serialize_user(user),
-            message: 'Logged in successfully',
+            message: 'User logged in successfully',
             auth_info: auth_info(tokens, include_tokens: true)
-          }
+          }, status: :ok
         else
-          render json: { error: 'Invalid email or password' }, status: :unauthorized
+          render json: { error: 'Invalid credentials' }, status: :unauthorized
         end
-      rescue => e
-        Rails.logger.error "Sign in error: #{e.message}"
-        render json: { error: 'Login failed' }, status: :internal_server_error
+      rescue StandardError => e
+        Rails.logger.error "Login error: #{e.message}"
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
       def refresh_token
@@ -60,18 +54,18 @@ module Api
           render json: {
             message: 'Tokens refreshed successfully',
             auth_info: auth_info(tokens, include_tokens: true)
-          }
+          }, status: :ok
         else
           clear_auth_cookies
           render json: { error: 'Invalid refresh token' }, status: :unauthorized
         end
-      rescue => e
+      rescue StandardError => e
         Rails.logger.error "Token refresh error: #{e.message}"
         clear_auth_cookies
-        render json: { error: 'Token refresh failed' }, status: :internal_server_error
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
-      def sign_out
+      def logout
         access_token = cookies[:access_token]
         refresh_token = cookies[:refresh_token]
         JwtService.invalidate_tokens(current_user.id, access_token, refresh_token) if current_user
@@ -82,14 +76,14 @@ module Api
             status: 'logged_out',
             tokens_cleared: true
           }
-        }
-      rescue => e
-        Rails.logger.error "Sign out error: #{e.message}"
-        render json: { error: 'Sign out failed' }, status: :internal_server_error
+        }, status: :ok
+      rescue StandardError => e
+        Rails.logger.error "Logout error: #{e.message}"
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
       def google
-        return render json: { error: 'Access token is required' }, status: :unauthorized if params[:access_token].blank?
+        return render json: { error: 'Invalid Google token' }, status: :unauthorized if params[:access_token].blank?
 
         client = OAuth2::Client.new(
           ENV['GOOGLE_CLIENT_ID'],
@@ -103,13 +97,13 @@ module Api
         user_info = JSON.parse(response.body)
 
         user = User.from_omniauth(OpenStruct.new(
-          provider: 'google_oauth2',
-          uid: user_info['sub'],
-          info: OpenStruct.new(
-            email: user_info['email'],
-            name: user_info['name']
-          )
-        ))
+                                    provider: 'google_oauth2',
+                                    uid: user_info['sub'],
+                                    info: OpenStruct.new(
+                                      email: user_info['email'],
+                                      name: user_info['name']
+                                    )
+                                  ))
 
         tokens = generate_auth_tokens(user.id)
         store_auth_tokens(tokens, user)
@@ -118,24 +112,33 @@ module Api
           user: serialize_user(user),
           message: 'Successfully authenticated with Google',
           auth_info: auth_info(tokens, include_tokens: true)
-        }
-      rescue OAuth2::Error => e
+        }, status: :ok
+      rescue OAuth2::Error
         render json: { error: 'Invalid Google token' }, status: :unauthorized
-      rescue => e
+      rescue StandardError => e
         Rails.logger.error "Google auth error: #{e.message}"
-        render json: { error: 'Authentication failed' }, status: :internal_server_error
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
       def profile
-        render json: { user: serialize_user(current_user) }
+        render json: { user: serialize_user(current_user) }, status: :ok
+      rescue StandardError => e
+        Rails.logger.error "Profile error: #{e.message}"
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
       def update_profile
         if current_user.update(user_params)
-          render json: { user: serialize_user(current_user), message: 'Profile updated successfully' }
+          render json: {
+            user: serialize_user(current_user),
+            message: 'Profile updated successfully'
+          }, status: :ok
         else
           render json: { errors: current_user.errors.full_messages }, status: :unprocessable_entity
         end
+      rescue StandardError => e
+        Rails.logger.error "Update profile error: #{e.message}"
+        render json: { error: 'Server error' }, status: :internal_server_error
       end
 
       private
