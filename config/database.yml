@@ -25,4 +25,3 @@ production:
   url: <%= ENV['DATABASE_URL'] %>
   pool: 15
   sslmode: require
-r
