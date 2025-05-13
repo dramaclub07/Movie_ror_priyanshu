@@ -1,423 +1,120 @@
-require 'swagger_helper'
+require 'rails_helper'
 
-RSpec.describe 'Auth API' do
-  path '/api/v1/register' do
-    post 'Creates a user' do
-      tags 'Authentication'
-      consumes 'application/json'
-      produces 'application/json'
-      security []
-      parameter name: :user, in: :body, schema: {
-        type: :object,
-        properties: {
-          user: {
-            type: :object,
-            properties: {
-              email: { type: :string },
-              password: { type: :string },
-              password_confirmation: { type: :string },
-              phone_number: { type: :string, pattern: '^[6789]\\d{9}$' },
-              name: { type: :string }
-            },
-            required: %w[email password password_confirmation phone_number name]
-          }
-        }
-      }
+RSpec.describe 'Auth API', type: :request do
+  let(:password) { 'password123' }
+  let(:user) do
+    create(:user,
+           email: 'user90@example.com',
+           password: password,
+           password_confirmation: password,
+           phone_number: '9876843210',
+           name: 'Priyanshu Dev')
+  end
 
-      response '201', 'user created' do
-        let(:user) do
-          {
-            user: {
-              email: "newuser_#{SecureRandom.hex(4)}@example.com",
-              password: 'Password123',
-              password_confirmation: 'Password123',
-              phone_number: '7890123456',
-              name: 'New User'
-            }
-          }
-        end
-        schema type: :object,
-               properties: {
-                 user: {
-                   type: :object,
-                   properties: {
-                     id: { type: :integer },
-                     email: { type: :string },
-                     phone_number: { type: :string },
-                     name: { type: :string },
-                     role: { type: :string },
-                     created_at: { type: :string, format: 'date-time' },
-                     updated_at: { type: :string, format: 'date-time' }
-                   }
-                 },
-                 message: { type: :string },
-                 auth_info: {
-                   type: :object,
-                   properties: {
-                     status: { type: :string },
-                     token_type: { type: :string },
-                     access_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     refresh_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     cookie_info: {
-                       type: :object,
-                       properties: {
-                         access_token_cookie: { type: :string },
-                         refresh_token_cookie: { type: :string },
-                         secure: { type: :boolean },
-                         same_site: { type: :string }
-                       }
-                     }
-                   }
-                 }
-               }
-        run_test! do
-          post '/api/v1/register', params: user, as: :json
-        end
-      end
+  describe 'POST /api/v1/register' do
+    it 'creates a user with valid attributes' do
+      valid_attrs = attributes_for(:user).merge(password: 'securepass', password_confirmation: 'securepass')
 
-      response '422', 'invalid request' do
-        let(:user) do
-          {
-            user: {
-              email: 'invalid',
-              password: 'short',
-              password_confirmation: 'different',
-              phone_number: '1234567890',
-              name: ''
-            }
-          }
-        end
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: { type: :string }
-                 }
-               }
-        run_test! do
-          post '/api/v1/register', params: user, as: :json
-        end
-      end
+      post '/api/v1/register', params: { user: valid_attrs }, as: :json
+
+      expect(response).to have_http_status(:created)
+      expect(response.parsed_body['message']).to eq('User registered successfully')
+      expect(response.parsed_body['user']['email']).to eq(valid_attrs[:email])
+    end
+
+    it 'returns error for duplicate email' do
+      create(:user, email: 'dupe@example.com')
+
+      post '/api/v1/register', params: { user: { email: 'dupe@example.com', password: '123456', password_confirmation: '123456', phone_number: '9876543211', name: 'Dupe' } }, as: :json
+
+      expect(response).to have_http_status(422)
+      expect(response.parsed_body['errors']).to include('Email has already been taken')
     end
   end
 
-  path '/api/v1/login' do
-    post 'Signs in a user' do
-      tags 'Authentication'
-      consumes 'application/json'
-      produces 'application/json'
-      security []
-      parameter name: :user, in: :body, schema: {
-        type: :object,
-        properties: {
-          user: {
-            type: :object,
-            properties: {
-              email: { type: :string },
-              password: { type: :string }
-            },
-            required: %w[email password]
-          }
-        }
-      }
+  describe 'POST /api/v1/login' do
+    it 'logs in with correct credentials' do
+      user # ensure user is created
+      post '/api/v1/login', params: { user: { email: user.email, password: password } }, as: :json
 
-      response '200', 'user signed in' do
-        let(:user_record) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
-        let(:user) do
-          {
-            user: {
-              email: user_record.email,
-              password: 'Password123'
-            }
-          }
-        end
-        schema type: :object,
-               properties: {
-                 user: {
-                   type: :object,
-                   properties: {
-                     id: { type: :integer },
-                     email: { type: :string },
-                     phone_number: { type: :string },
-                     name: { type: :string },
-                     role: { type: :string },
-                     created_at: { type: :string, format: 'date-time' },
-                     updated_at: { type: :string, format: 'date-time' }
-                   }
-                 },
-                 message: { type: :string },
-                 auth_info: {
-                   type: :object,
-                   properties: {
-                     status: { type: :string },
-                     token_type: { type: :string },
-                     access_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     refresh_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     cookie_info: {
-                       type: :object,
-                       properties: {
-                         access_token_cookie: { type: :string },
-                         refresh_token_cookie: { type: :string },
-                         secure: { type: :boolean },
-                         same_site: { type: :string }
-                       }
-                     }
-                   }
-                 }
-               }
-        run_test! do
-          post '/api/v1/login', params: user, as: :json
-        end
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['message']).to eq('User logged in successfully')
+      expect(response.parsed_body['auth_info']['access_token']).to be_present
+    end
 
-      response '401', 'invalid credentials' do
-        let(:user_record) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
-        let(:user) do
-          {
-            user: {
-              email: user_record.email,
-              password: 'wrong'
-            }
-          }
-        end
-        schema type: :object,
-               properties: {
-                 error: { type: :string }
-               }
-        run_test! do
-          post '/api/v1/login', params: user, as: :json
-        end
-      end
+    it 'rejects invalid password' do
+      post '/api/v1/login', params: { user: { email: user.email, password: 'wrongpass' } }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['error']).to eq('Invalid credentials')
     end
   end
 
-  path '/api/v1/auth/google' do
-    post 'Signs in or creates a user with Google' do
-      tags 'Authentication'
-      consumes 'application/json'
-      produces 'application/json'
-      security []
-      parameter name: :token, in: :body, schema: {
-        type: :object,
-        properties: {
-          access_token: { type: :string }
-        },
-        required: ['access_token']
-      }
+  describe 'POST /api/v1/refresh-token' do
+    it 'refreshes token if valid refresh token is provided' do
+      tokens = JwtService.generate_tokens(user.id)
+      user.update!(refresh_token: tokens[:refresh_token])
+      cookies[:refresh_token] = tokens[:refresh_token]
 
-      response '200', 'successful authentication' do
-        let(:google_email) { "google_#{SecureRandom.hex(4)}@example.com" }
-        before do
-          allow_any_instance_of(OAuth2::AccessToken).to receive(:get).and_return(
-            double(body: { sub: '123', email: google_email, name: 'Test User' }.to_json)
-          )
-        end
-        let(:token) { { access_token: 'mock-google-token' } }
-        schema type: :object,
-               properties: {
-                 user: {
-                   type: :object,
-                   properties: {
-                     id: { type: :integer },
-                     email: { type: :string },
-                     phone_number: { type: :string, nullable: true },
-                     name: { type: :string },
-                     role: { type: :string },
-                     created_at: { type: :string, format: 'date-time' },
-                     updated_at: { type: :string, format: 'date-time' }
-                   }
-                 },
-                 message: { type: :string },
-                 auth_info: {
-                   type: :object,
-                   properties: {
-                     status: { type: :string },
-                     token_type: { type: :string },
-                     access_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     refresh_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     cookie_info: {
-                       type: :object,
-                       properties: {
-                         access_token_cookie: { type: :string },
-                         refresh_token_cookie: { type: :string },
-                         secure: { type: :boolean },
-                         same_site: { type: :string }
-                       }
-                     }
-                   }
-                 }
-               }
-        run_test! do
-          post '/api/v1/auth/google', params: token, as: :json
-        end
-      end
+      post '/api/v1/refresh-token', as: :json
 
-      response '401', 'authentication failed' do
-        before do
-          allow_any_instance_of(OAuth2::AccessToken).to receive(:get).and_raise(OAuth2::Error.new('Invalid token'))
-        end
-        let(:token) { { access_token: 'invalid-token' } }
-        schema type: :object,
-               properties: {
-                 error: { type: :string }
-               }
-        run_test! do
-          post '/api/v1/auth/google', params: token, as: :json
-        end
-      end
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['auth_info']['refresh_token']['token']).to be_present
+    end
+
+    it 'returns 401 for invalid refresh token' do
+      cookies[:refresh_token] = 'invalid-token'
+
+      post '/api/v1/refresh-token', as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['error']).to eq('Invalid refresh token')
     end
   end
 
-  path '/api/v1/logout' do
-    delete 'Signs out a user' do
-      tags 'Authentication'
-      security [bearer_auth: []]
-      produces 'application/json'
+  describe 'DELETE /api/v1/logout' do
+    it 'logs out and clears tokens' do
+      tokens = JwtService.generate_tokens(user.id)
+      user.update!(refresh_token: tokens[:refresh_token])
+      cookies[:access_token] = tokens[:access_token]
+      cookies[:refresh_token] = tokens[:refresh_token]
 
-      response '200', 'signed out successfully' do
-        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
-        let(:jwt_token) do
-          tokens = JwtService.generate_tokens(user.id)
-          user.update!(refresh_token: tokens[:refresh_token])
-          tokens[:access_token]
-        end
-        let(:Authorization) { "Bearer #{jwt_token}" }
-        schema type: :object,
-               properties: {
-                 message: { type: :string },
-                 auth_info: {
-                   type: :object,
-                   properties: {
-                     status: { type: :string },
-                     tokens_cleared: { type: :boolean }
-                   }
-                 }
-               }
-        run_test!
-      end
+      delete '/api/v1/logout', headers: { 'Authorization' => "Bearer #{tokens[:access_token]}" }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['message']).to eq('Successfully signed out')
+      expect(response.parsed_body['auth_info']['status']).to eq('logged_out')
     end
   end
 
-  path '/api/v1/refresh-token' do
-    post 'Refreshes authentication tokens' do
-      tags 'Authentication'
-      consumes 'application/json'
-      produces 'application/json'
-      security []
+  describe 'POST /api/v1/google' do
+    it 'authenticates user via Google (mocked)' do
+      stub_request(:get, "https://www.googleapis.com/oauth2/v3/userinfo")
+        .to_return(status: 200, body: {
+          sub: '12345',
+          email: 'googleuser@example.com',
+          name: 'Google User'
+        }.to_json, headers: { 'Content-Type' => 'application/json' })
 
-      response '200', 'tokens refreshed' do
-        let(:user) { create(:user, email: "test_#{SecureRandom.hex(4)}@example.com", password: 'Password123', name: 'Test User', phone_number: '7890123456', role: 'user') }
-        let(:refresh_token) do
-          tokens = JwtService.generate_tokens(user.id)
-          user.update!(refresh_token: tokens[:refresh_token])
-          tokens[:refresh_token]
-        end
-        before do
-          cookies[:refresh_token] = refresh_token
-        end
-        schema type: :object,
-               properties: {
-                 message: { type: :string },
-                 auth_info: {
-                   type: :object,
-                   properties: {
-                     status: { type: :string },
-                     token_type: { type: :string },
-                     access_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     refresh_token: {
-                       type: :object,
-                       properties: {
-                         present: { type: :boolean },
-                         expires_in: { type: :integer },
-                         expires_at: { type: :integer },
-                         token: { type: :string }
-                       }
-                     },
-                     cookie_info: {
-                       type: :object,
-                       properties: {
-                         access_token_cookie: { type: :string },
-                         refresh_token_cookie: { type: :string },
-                         secure: { type: :boolean },
-                         same_site: { type: :string }
-                       }
-                     }
-                   }
-                 }
-               }
-        run_test! do
-          post '/api/v1/refresh-token', as: :json
-        end
-      end
+      allow(OAuth2::AccessToken).to receive(:new).and_return(
+        instance_double(OAuth2::AccessToken, get: OpenStruct.new(body: {
+          sub: '12345',
+          email: 'googleuser@example.com',
+          name: 'Google User'
+        }.to_json))
+      )
 
-      response '401', 'invalid refresh token' do
-        before do
-          cookies[:refresh_token] = 'invalid-token'
-        end
-        schema type: :object,
-               properties: {
-                 error: { type: :string }
-               }
-        run_test! do
-          post '/api/v1/refresh-token', as: :json
-        end
-      end
+      post '/api/v1/google', params: { access_token: 'valid-google-token' }, as: :json
+
+      expect(response).to have_http_status(:ok)
+      expect(response.parsed_body['user']['email']).to eq('googleuser@example.com')
+    end
+
+    it 'returns 401 for invalid Google token' do
+      post '/api/v1/google', params: { access_token: nil }, as: :json
+
+      expect(response).to have_http_status(:unauthorized)
+      expect(response.parsed_body['error']).to eq('Invalid Google token')
     end
   end
 end

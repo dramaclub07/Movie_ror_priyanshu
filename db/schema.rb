@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_10_075647) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_13_061621) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -142,6 +142,8 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_10_075647) do
     t.string "device_token"
     t.boolean "notifications_enabled", default: true
     t.string "stripe_customer_id"
+    t.string "otp"
+    t.datetime "otp_expires_at"
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["github_id"], name: "index_users_on_github_id", unique: true
     t.index ["phone_number"], name: "index_users_on_phone_number", unique: true
