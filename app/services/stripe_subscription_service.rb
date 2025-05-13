@@ -28,7 +28,7 @@ module StripeSubscriptionService
 
   def self.create_stripe_session(user, subscription, plan)
     customer = create_or_retrieve_customer(user)
-    base_url = Rails.env.development? ? 'http://localhost:5173' : 'https://your-app.com' # Replace with your production URL
+    base_url = Rails.env.development? ? 'http://localhost:5173' : 'http://localhost:5173'
     Rails.logger.info "Creating Stripe session with price: #{PLANS[plan.to_sym][:price]}, base_url: #{base_url}"
     session = Stripe::Checkout::Session.create(
       {
