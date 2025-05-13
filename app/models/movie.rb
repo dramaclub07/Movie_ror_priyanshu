@@ -34,15 +34,29 @@ class Movie < ApplicationRecord
 
   def poster_url
     return unless poster.attached?
-
-    poster.service.url(poster.key, eager: true)
+    blob = poster.blob
+    return unless blob&.key.present? &&
+                blob.filename.present? &&
+                blob.content_type.present?
+    poster.service.url(blob.key, eager: true)
+  rescue ArgumentError => e
+    Rails.logger.warn("⚠️ Poster URL error for Movie #{id}: #{e.message}")
+    nil
   end
+
 
   def banner_url
     return unless banner.attached?
-
-    banner.service.url(banner.key, eager: true)
+    blob = banner.blob
+    return unless blob&.key.present? &&
+                blob.filename.present? &&
+                blob.content_type.present?
+    banner.service.url(blob.key, eager: true)
+  rescue ArgumentError => e
+    Rails.logger.warn("⚠️ Banner URL error for Movie #{id}: #{e.message}")
+    nil
   end
+
 
   def self.ransackable_attributes(_auth_object = nil)
     %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium

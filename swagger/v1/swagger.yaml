@@ -36,7 +36,7 @@ paths:
                       example: Password123
                     phone_number:
                       type: string
-                      example: +1234567890
+                      example: 9234567890
                     name:
                       type: string
                       example: John Doe
@@ -1285,6 +1285,13 @@ components:
         updated_at:
           type: string
           format: date-time
+        plan_type:
+          type: string
+          enum: 
+            - free
+            - premium
+          nullable: true
+          description: The user's active subscription plan
     AuthInfo:
       type: object
       properties:
