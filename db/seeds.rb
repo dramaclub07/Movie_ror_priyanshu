@@ -327,34 +327,3 @@ def seed_genres
     AdminUser.create!(email: 'admin@example.com', password: 'password', password_confirmation: 'password') if Rails.env.development?
   end
   
-  begin
-    ActiveRecord::Base.transaction do
-      # Clear all relevant tables to avoid foreign key constraints
-      ActiveRecord::Base.connection.disable_referential_integrity do
-        puts "Clearing tables..."
-        ActiveRecord::Base.connection.truncate_tables(
-          'active_admin_comments',
-          'active_storage_attachments',
-          'active_storage_variant_records',
-          'watchlists',
-          'subscriptions',
-          'movies',
-          'active_storage_blobs',
-          'blacklisted_tokens',
-          'users',
-          'admin_users',
-          'genres'
-        )
-        puts "Tables cleared successfully."
-      end
-  
-      seed_genres
-      seed_movies
-      seed_users
-      seed_admin_user
-  
-      puts "Seeded #{Genre.count} genres, #{Movie.count} movies, #{User.count} users, and #{AdminUser.count} admin users"
-    end
-  rescue StandardError => e
-    puts "Error during seeding: #{e.message}"
-  end
