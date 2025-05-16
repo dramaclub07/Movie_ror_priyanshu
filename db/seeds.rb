@@ -306,26 +306,25 @@ def seed_genres
   end
   
   def seed_users
-    User.find_or_create_by!(email: 'user@example.com') do |user|
-      user.name = 'Test User'
-      user.password = 'password'
-      user.phone_number = '9897967890'
-      user.role = 'user'
-    end
+    User.create!(
+      name: 'Test User',
+      email: 'user@example.com',
+      password: 'password',
+      mobile_number: '9234567890',
+      role: 'user'
+    )
   
-    User.find_or_create_by!(email: 'supervisor@example.com') do |user|
-      user.name = 'Test Supervisor'
-      user.password = 'password'
-      user.phone_number = '9876543219'
-      user.role = 'supervisor'
-    end
+    User.create!(
+      name: 'Test Supervisor',
+      email: 'supervisor@example.com',
+      password: 'password',
+      mobile_number: '9876543221',
+      role: 'supervisor'
+    )
   end
   
   def seed_admin_user
-    AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
-      admin.password = ENV['ADMIN_PASSWORD'] || 'password'
-      admin.password_confirmation = ENV['ADMIN_PASSWORD'] || 'password'
-    end
+    AdminUser.create!(email: 'admin@example.com', password: 'password', password_confirmation: 'password') if Rails.env.development?
   end
   
   begin
