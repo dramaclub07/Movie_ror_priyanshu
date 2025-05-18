@@ -1154,7 +1154,7 @@ paths:
               properties:
                 device_token:
                   type: string
-                  example: test_device_token_456
+                  example: abc123xyz456exampletoken
               required:
                 - device_token
       responses:

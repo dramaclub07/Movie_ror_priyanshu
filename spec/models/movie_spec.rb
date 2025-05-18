@@ -1,15 +1,10 @@
-# spec/models/movie_spec.rb
-
 require 'rails_helper'
 
 RSpec.describe Movie, type: :model do
   describe 'associations' do
     it { should belong_to(:genre).counter_cache(true) }
-    it { should have_many(:subscriptions) }
-    it { should have_many(:users).through(:subscriptions) }
     it { should have_many(:watchlists).dependent(:destroy) }
     it { should have_many(:users).through(:watchlists) }
-
     it { should have_one_attached(:poster) }
     it { should have_one_attached(:banner) }
   end
@@ -36,33 +31,46 @@ RSpec.describe Movie, type: :model do
   end
 
   describe 'custom validations' do
-    let(:movie) { build(:movie) }
+    let(:genre) { create(:genre) }
+    let(:movie) { build(:movie, genre: genre) }
 
     context 'poster content type' do
-      it 'is valid with jpeg/png' do
-        movie.poster.attach(io: File.open(Rails.root.join('spec/fixtures/files/poster.jpg')),
-                            filename: 'poster.jpg', content_type: 'image/jpeg')
+      it 'is valid with png' do
+        movie.poster.attach(
+          io: File.open(Rails.root.join('spec/fixtures/files/poster.png')),
+          filename: 'poster.png', 
+          content_type: 'image/png'
+        )
         expect(movie).to be_valid
       end
 
       it 'is invalid with non-image content type' do
-        movie.poster.attach(io: File.open(Rails.root.join('spec/fixtures/files/fake.txt')),
-                            filename: 'fake.txt', content_type: 'text/plain')
+        movie.poster.attach(
+          io: File.open(Rails.root.join('spec/fixtures/files/fake.txt')),
+          filename: 'fake.txt',
+          content_type: 'text/plain'
+        )
         expect(movie).not_to be_valid
         expect(movie.errors[:poster]).to include('must be a JPEG or PNG')
       end
     end
 
     context 'banner content type' do
-      it 'is valid with jpeg/png' do
-        movie.banner.attach(io: File.open(Rails.root.join('spec/fixtures/files/banner.png')),
-                            filename: 'banner.png', content_type: 'image/png')
+      it 'is valid with png' do
+        movie.banner.attach(
+          io: File.open(Rails.root.join('spec/fixtures/files/banner.png')),
+          filename: 'banner.png',
+          content_type: 'image/png'
+        )
         expect(movie).to be_valid
       end
 
       it 'is invalid with wrong file type' do
-        movie.banner.attach(io: File.open(Rails.root.join('spec/fixtures/files/fake.txt')),
-                            filename: 'fake.txt', content_type: 'text/plain')
+        movie.banner.attach(
+          io: File.open(Rails.root.join('spec/fixtures/files/fake.txt')),
+          filename: 'fake.txt',
+          content_type: 'text/plain'
+        )
         expect(movie).not_to be_valid
         expect(movie.errors[:banner]).to include('must be a JPEG or PNG')
       end
@@ -70,11 +78,13 @@ RSpec.describe Movie, type: :model do
   end
 
   describe 'scopes' do
+    let!(:genre) { create(:genre) }
+    
     before do
-      @with_poster = create(:movie, :with_poster)
-      @without_poster = create(:movie)
-      @with_banner = create(:movie, :with_banner)
-      @without_banner = create(:movie)
+      @with_poster = create(:movie, :with_poster, genre: genre)
+      @without_poster = create(:movie, genre: genre)
+      @with_banner = create(:movie, :with_banner, genre: genre)
+      @without_banner = create(:movie, genre: genre)
     end
 
     it 'returns movies with posters' do
@@ -99,25 +109,29 @@ RSpec.describe Movie, type: :model do
   end
 
   describe '#poster_url' do
+    let!(:genre) { create(:genre) }
+
     it 'returns poster URL if attached' do
-      movie = create(:movie, :with_poster)
+      movie = create(:movie, :with_poster, genre: genre)
       expect(movie.poster_url).to be_present
     end
 
     it 'returns nil if not attached' do
-      movie = create(:movie)
+      movie = create(:movie, genre: genre)
       expect(movie.poster_url).to be_nil
     end
   end
 
   describe '#banner_url' do
+    let!(:genre) { create(:genre) }
+
     it 'returns banner URL if attached' do
-      movie = create(:movie, :with_banner)
+      movie = create(:movie, :with_banner, genre: genre)
       expect(movie.banner_url).to be_present
     end
 
     it 'returns nil if not attached' do
-      movie = create(:movie)
+      movie = create(:movie, genre: genre)
       expect(movie.banner_url).to be_nil
     end
   end

@@ -630,6 +630,7 @@ DEPENDENCIES
   turbo-rails (~> 2.0)
   twilio-ruby (~> 7.2)
   tzinfo-data
+  warden-jwt_auth
   web-console (~> 4.2)
   webmock
 

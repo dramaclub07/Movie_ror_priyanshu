@@ -1,68 +1,168 @@
-# This file is copied to spec/ when you run 'rails generate rspec:install'
 require 'spec_helper'
+ENV['RAILS_ENV'] ||= 'test'
+require File.expand_path('../config/environment', __dir__)
+require 'rspec/rails'
 require 'webmock/rspec'
 require 'shoulda/matchers'
-
-
-ENV['RAILS_ENV'] ||= 'test'
-require_relative '../config/environment'
-# Prevent database truncation if the environment is production
-abort("The Rails environment is running in production mode!") if Rails.env.production?
-require 'rspec/rails'
+require 'simplecov'
+require 'database_cleaner/active_record'
+require 'factory_bot_rails'
 require 'rswag/specs'
 
-# Add additional requires below this line. Rails is not loaded until this point!
-require 'factory_bot_rails'
+# Configure SimpleCov
+SimpleCov.start 'rails' do
+  enable_coverage :branch
+  
+  # Coverage groups
+  add_group 'Models', 'app/models'
+  add_group 'Controllers', 'app/controllers'
+  add_group 'Helpers', 'app/helpers'
+  add_group 'Libraries', 'lib'
+  add_group 'Mailers', 'app/mailers'
+  add_group 'Jobs', 'app/jobs'
+  add_group 'Policies', 'app/policies'
+  add_group 'Serializers', 'app/serializers'
+  
+  # Filters
+  add_filter '/test/'
+  add_filter '/config/'
+  add_filter '/vendor/'
+  add_filter '/spec/'
+  add_filter '/db/'
+  
+  # Coverage thresholds
+  minimum_coverage line: 80
+  minimum_coverage_by_file line: 70
+end
 
-# Requires supporting ruby files with custom matchers and macros, etc, in
-# spec/support/ and its subdirectories. Files matching `spec/**/*_spec.rb` are
-# run as spec files by default.
+abort("The Rails environment is running in production mode!") if Rails.env.production?
+
+# Load support files
 Dir[Rails.root.join('spec', 'support', '**', '*.rb')].sort.each { |f| require f }
 
-# Checks for pending migrations and applies them before tests are run.
-# If you are not using ActiveRecord, you can remove these lines.
 begin
   ActiveRecord::Migration.maintain_test_schema!
 rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
 
+# Configure Active Storage for tests
+Rails.application.routes.default_url_options[:host] = 'localhost:3000'
+
 RSpec.configure do |config|
-  # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
+  config.use_transactional_fixtures = false
+
   config.fixture_path = Rails.root.join('spec/fixtures')
-  config.include Shoulda::Matchers::ActiveModel, type: :model
-  config.include Shoulda::Matchers::ActiveRecord, type: :model
 
-  # If you're not using ActiveRecord, or you'd prefer not to run each of your
-  # examples within a transaction, remove the following line or assign false
-  # instead of true.
-  config.use_transactional_fixtures = true
-
-  # You can uncomment this line to turn off ActiveRecord support entirely.
-  # config.use_active_record = false
-
-  # RSpec Rails can automatically mix in different behaviours to your tests
-  # based on their file location, for example enabling you to call `get` and
-  # `post` in specs under `spec/controllers`.
-  config.infer_spec_type_from_file_location!
-
-  # Filter lines from Rails gems in backtraces.
-  config.filter_rails_from_backtrace!
-  # arbitrary gems may also be filtered via:
-  # config.filter_gems_from_backtrace("gem name")
-
-  # Include FactoryBot methods
+  # Factory Bot setup
   config.include FactoryBot::Syntax::Methods
 
-  # Configure Rswag
+  # Database cleaner configuration
+  config.before(:suite) do
+    DatabaseCleaner.strategy = :transaction
+    DatabaseCleaner.clean_with(:truncation)
+    
+    # Set URL options for ActiveStorage
+    ActiveStorage::Current.url_options = { host: 'localhost:3000' }
+    Rails.application.routes.default_url_options[:host] = 'localhost:3000'
+  end
+
+  config.around(:each) do |example|
+    DatabaseCleaner.cleaning do
+      example.run
+    end
+  end
+
+  config.before(:each) do
+    DatabaseCleaner.start
+    ActiveStorage::Current.url_options = { host: 'localhost:3000' }
+    # Configure Active Job to use test adapter
+    ActiveJob::Base.queue_adapter = :test
+  end
+
+  config.after(:each) do
+    DatabaseCleaner.clean
+  end
+
+  # Include helpers
+  config.include Shoulda::Matchers::ActiveModel, type: :model
+  config.include Shoulda::Matchers::ActiveRecord, type: :model
+  config.include Devise::Test::IntegrationHelpers, type: :request
+  config.include Warden::Test::Helpers
+
+  # Include JSON helpers
+  config.include JsonHelper, type: :request
+
+  # Include Auth helpers
+  config.include AuthHelper, type: :request
+
+  # Include Request helpers
+  config.include RequestHelper, type: :request
+
+  # Configure JWT token settings
+  config.before(:each, type: :request) do
+    @jwt_token = nil
+  end
+
+  # Default headers for request specs
+  config.before(:each, type: :request) do |example|
+    host! 'localhost:3000'
+    if example.metadata[:swagger]
+      default_headers = {
+        'Accept' => 'application/json',
+        'Content-Type' => 'application/json'
+      }
+      default_headers.each { |key, value| header key, value }
+    end
+  end
+
+  # RSpec settings
+  config.infer_spec_type_from_file_location!
+  config.filter_rails_from_backtrace!
+  config.order = :random
+  config.example_status_persistence_file_path = "tmp/examples.txt"
+
+  # Swagger configuration
   config.openapi_root = Rails.root.join('swagger').to_s
   config.openapi_specs = {
     'v1/swagger.yaml' => {
       openapi: '3.0.1',
       info: {
-        title: 'API V1',
+        title: 'Movies API',
         version: 'v1'
       },
+      components: {
+        schemas: {
+          movie: {
+            type: :object,
+            properties: {
+              id: { type: :integer },
+              title: { type: :string },
+              description: { type: :string },
+              release_year: { type: :integer },
+              genre_id: { type: :integer },
+              premium: { type: :boolean },
+              created_at: { type: :string, format: 'date-time' },
+              updated_at: { type: :string, format: 'date-time' }
+            },
+            required: ['title', 'genre_id']
+          },
+          error: {
+            type: :object,
+            properties: {
+              error: { type: :string }
+            }
+          }
+        },
+        securitySchemes: {
+          bearer_auth: {
+            type: :http,
+            scheme: :bearer,
+            bearerFormat: 'JWT'
+          }
+        }
+      },
+      security: [{ bearer_auth: [] }],
       paths: {},
       servers: [
         {
@@ -76,4 +176,19 @@ RSpec.configure do |config|
       ]
     }
   }
+
+  config.before(:each, type: :request) do |example|
+    if example.metadata[:swagger]
+      header 'Content-Type', 'application/json'
+      header 'Accept', 'application/json'
+    end
+  end
+end
+
+# Shoulda Matchers configuration
+Shoulda::Matchers.configure do |config|
+  config.integrate do |with|
+    with.test_framework :rspec
+    with.library :rails
+  end
 end

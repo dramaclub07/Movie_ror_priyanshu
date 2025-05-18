@@ -1,11 +1,10 @@
 FactoryBot.define do
   factory :user do
+    sequence(:email) { |n| "user#{n}@example.com" }
+    password { 'password123' }
     name { Faker::Name.name }
-    email { Faker::Internet.unique.email }
-    phone_number { "9#{Faker::Number.number(digits: 9)}" }
-    password { "password123" }
-    password_confirmation { "password123" }
-    role { "user" }
+    role { 'user' }
+    phone_number { "9#{Faker::Number.number(digits: 9)}" } # Valid Indian phone number
 
     trait :admin do
       role { "admin" }

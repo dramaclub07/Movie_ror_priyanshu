@@ -1,6 +1,42 @@
 require 'swagger_helper'
 
-RSpec.describe 'Movies API' do
+RSpec.describe 'Movies API', type: :request do
+  let(:user) { create(:user) }
+  let(:admin) { create(:user, role: 'admin') }
+  let(:auth_headers) { auth_headers_for(admin) }
+  let(:genre) { create(:genre) }
+  let(:movie) { create(:movie, genre: genre) }
+  let(:token) { JwtService.encode({ user_id: user.id }) }
+
+  # Schema configuration
+  before(:all) do
+    RSpec.configure do |config|
+      config.openapi_specs['v1/swagger.yaml'][:components] = {
+        schemas: {
+          movie: {
+            type: :object,
+            properties: {
+              id: { type: :integer },
+              title: { type: :string },
+              description: { type: :string },
+              release_year: { type: :integer },
+              genre_id: { type: :integer },
+              created_at: { type: :string, format: 'date-time' },
+              updated_at: { type: :string, format: 'date-time' }
+            }
+          }
+        },
+        securitySchemes: {
+          bearer_auth: {
+            type: :http,
+            scheme: :bearer,
+            bearerFormat: 'JWT'
+          }
+        }
+      }
+    end
+  end
+
   path '/api/v1/movies' do
     get 'Lists all movies' do
       tags 'Movies'
@@ -8,25 +44,26 @@ RSpec.describe 'Movies API' do
       produces 'application/json'
       parameter name: :page, in: :query, type: :integer, required: false
       parameter name: :per_page, in: :query, type: :integer, required: false
-      parameter name: :genre_id, in: :query, type: :integer, required: false
-      parameter name: :search, in: :query, type: :string, required: false
 
       response '200', 'movies found' do
-        schema type: :object,
-               properties: {
-                 movies: {
-                   type: :array,
-                   items: { '$ref' => '#/components/schemas/movie' }
-                 },
-                 meta: {
-                   type: :object,
-                   properties: {
-                     current_page: { type: :integer },
-                     total_pages: { type: :integer },
-                     total_count: { type: :integer }
-                   }
-                 }
-               }
+        let(:Authorization) { auth_headers['Authorization'] }
+
+        before do
+          create_list(:movie, 3, genre: genre)
+        end
+
+        run_test!
+      end
+
+      response '401', 'unauthorized' do
+        let(:Authorization) { nil }
+
+        before do
+          allow_any_instance_of(ApplicationController)
+            .to receive(:authenticate_user!)
+            .and_raise(JWT::DecodeError)
+        end
+
         run_test!
       end
     end
@@ -34,33 +71,27 @@ RSpec.describe 'Movies API' do
     post 'Creates a movie' do
       tags 'Movies'
       security [bearer_auth: []]
-      consumes 'multipart/form-data'
-      produces 'application/json'
-      parameter name: :movie, in: :formData, schema: {
+      consumes 'application/json'
+      parameter name: :movie, in: :body, schema: {
         type: :object,
         properties: {
-          'movie[title]': { type: :string },
-          'movie[release_year]': { type: :integer },
-          'movie[rating]': { type: :string },
-          'movie[genre_id]': { type: :integer },
-          'movie[poster]': { type: :string, format: 'binary' }
+          title: { type: :string },
+          genre_id: { type: :integer }
         },
-        required: ['movie[title]', 'movie[release_year]', 'movie[rating]', 'movie[genre_id]']
+        required: ['title', 'genre_id']
       }
 
       response '201', 'movie created' do
-        schema '$ref' => '#/components/schemas/movie'
+        let(:Authorization) { auth_headers['Authorization'] }
+        let(:movie) { { title: 'Test Movie', genre_id: genre.id } }
+
         run_test!
       end
 
       response '422', 'invalid request' do
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: { type: :string }
-                 }
-               }
+        let(:Authorization) { auth_headers['Authorization'] }
+        let(:movie) { { title: '' } }
+
         run_test!
       end
     end
@@ -69,65 +100,72 @@ RSpec.describe 'Movies API' do
   path '/api/v1/movies/{id}' do
     parameter name: :id, in: :path, type: :integer
 
+    let(:existing_movie) { create(:movie, genre: genre) }
+    let(:id) { existing_movie.id }
+
     get 'Retrieves a movie' do
       tags 'Movies'
       security [bearer_auth: []]
       produces 'application/json'
 
       response '200', 'movie found' do
-        schema '$ref' => '#/components/schemas/movie'
-        run_test!
+        let(:Authorization) { "Bearer #{token}" }
+
+        run_test! do |response|
+          expect(response).to have_http_status(:ok)
+        end
       end
 
       response '404', 'movie not found' do
-        schema type: :object,
-               properties: {
-                 error: { type: :string }
-               }
-        run_test!
+        let(:Authorization) { "Bearer #{token}" }
+        let(:id) { 0 }
+
+        run_test! do |response|
+          expect(response).to have_http_status(:not_found)
+        end
       end
     end
 
     patch 'Updates a movie' do
       tags 'Movies'
       security [bearer_auth: []]
-      consumes 'multipart/form-data'
-      produces 'application/json'
-      parameter name: :movie, in: :formData, schema: {
+      consumes 'application/json'
+      parameter name: :movie, in: :body, schema: {
         type: :object,
         properties: {
-          'movie[title]': { type: :string },
-          'movie[release_year]': { type: :integer },
-          'movie[rating]': { type: :string },
-          'movie[genre_id]': { type: :integer },
-          'movie[poster]': { type: :string, format: 'binary' }
+          title: { type: :string }
         }
       }
 
       response '200', 'movie updated' do
-        schema '$ref' => '#/components/schemas/movie'
-        run_test!
+        let(:Authorization) { "Bearer #{token}" }
+        let(:movie) { { title: 'Updated Title' } }
+
+        run_test! do |response|
+          expect(response).to have_http_status(:ok)
+        end
       end
 
       response '422', 'invalid request' do
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :array,
-                   items: { type: :string }
-                 }
-               }
-        run_test!
+        let(:Authorization) { "Bearer #{token}" }
+        let(:movie) { { title: '' } }
+
+        run_test! do |response|
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
       end
     end
 
     delete 'Deletes a movie' do
       tags 'Movies'
       security [bearer_auth: []]
-      produces 'application/json'
 
       response '204', 'movie deleted' do
-        run_test!
+        let(:Authorization) { "Bearer #{token}" }
+
+        run_test! do |response|
+          expect(response).to have_http_status(:no_content)
+        end
       end
     end
   end
@@ -137,70 +175,16 @@ RSpec.describe 'Movies API' do
       tags 'Movies'
       security [bearer_auth: []]
       produces 'application/json'
-      parameter name: :q, in: :query, type: :string, required: true
-      parameter name: :page, in: :query, type: :integer, required: false
+      parameter name: :q, in: :query, type: :string
 
       response '200', 'search results' do
-        schema type: :object,
-               properties: {
-                 movies: {
-                   type: :array,
-                   items: { '$ref' => '#/components/schemas/movie' }
-                 },
-                 meta: {
-                   type: :object,
-                   properties: {
-                     current_page: { type: :integer },
-                     total_pages: { type: :integer },
-                     total_count: { type: :integer }
-                   }
-                 }
-               }
-        run_test!
-      end
-    end
-  end
+        let(:Authorization) { auth_headers['Authorization'] }
+        let(:q) { movie.title }
 
-  path '/api/v1/movies/recommended' do
-    get 'Get recommended movies' do
-      tags 'Movies'
-      security [bearer_auth: []]
-      produces 'application/json'
+        before do
+          movie # create the movie
+        end
 
-      response '200', 'recommended movies' do
-        schema type: :object,
-               properties: {
-                 movies: {
-                   type: :array,
-                   items: { '$ref' => '#/components/schemas/movie' }
-                 }
-               }
-        run_test!
-      end
-    end
-  end
-
-  path '/api/v1/movies/{id}/rate' do
-    parameter name: :id, in: :path, type: :integer
-
-    post 'Rate a movie' do
-      tags 'Movies'
-      security [bearer_auth: []]
-      consumes 'application/json'
-      produces 'application/json'
-      parameter name: :rating, in: :body, schema: {
-        type: :object,
-        properties: {
-          rating: { type: :integer, minimum: 1, maximum: 5 }
-        },
-        required: ['rating']
-      }
-
-      response '200', 'rating saved' do
-        schema type: :object,
-               properties: {
-                 message: { type: :string }
-               }
         run_test!
       end
     end

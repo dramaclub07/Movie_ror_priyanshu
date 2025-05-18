@@ -1,41 +1,41 @@
 require 'rails_helper'
 
 RSpec.configure do |config|
-  config.openapi_root = Rails.root.join('swagger').to_s
-
-  config.openapi_specs = {
+  config.swagger_root = Rails.root.join('swagger').to_s
+  config.swagger_docs = {
     'v1/swagger.yaml' => {
       openapi: '3.0.1',
       info: {
-        title: 'Movie Explorer API V1',
+        title: 'Movies API',
         version: 'v1'
       },
-      paths: {},
-      servers: [
-        {
-          url: 'http://localhost:3000',
-          description: 'Local development server'
-        },
-        {
-          url: 'https://movie-ror-priyanshu-singh.onrender.com',
-          description: 'Production server on Render'
-        }
-      ],
       components: {
+        schemas: {
+          movie: {
+            type: :object,
+            properties: {
+              id: { type: :integer },
+              title: { type: :string },
+              description: { type: :string },
+              release_year: { type: :integer },
+              genre_id: { type: :integer },
+              premium: { type: :boolean },
+              created_at: { type: :string, format: 'date-time' },
+              updated_at: { type: :string, format: 'date-time' }
+            },
+            required: ['title', 'genre_id']
+          }
+        },
         securitySchemes: {
           bearer_auth: {
             type: :http,
             scheme: :bearer,
-            bearerFormat: :JWT
+            bearerFormat: 'JWT'
           }
         }
-      }
+      },
+      security: [{ bearer_auth: [] }],
+      paths: {}
     }
   }
-
-  # Global security requirement is commented out to prevent automatic Authorization header
-  # Individual endpoints specify security as needed (e.g., logout uses bearer_auth)
-  # config.openapi_specs['v1/swagger.yaml'][:security] = [{ bearer_auth: [] }]
-
-  config.openapi_format = :yaml
 end

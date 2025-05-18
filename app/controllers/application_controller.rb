@@ -56,10 +56,12 @@ class ApplicationController < ActionController::Base
       user_id = payload[:user_id] || payload['user_id']
       user = User.find_by(id: user_id)
 
-      raise ActiveRecord::RecordNotFound, 'User not found' unless user
-
-      @current_user = user
-      sign_in(:user, user, store: false)
+      if user
+        @current_user = user
+        sign_in(:user, user, store: false)
+      else
+        render json: { error: 'Authentication failed' }, status: :unauthorized
+      end
     rescue JWT::DecodeError => e
       Rails.logger.error "JWT Decode Error: #{e.message}"
       render json: { error: 'Invalid or expired token' }, status: :unauthorized

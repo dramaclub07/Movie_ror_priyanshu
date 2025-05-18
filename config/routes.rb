@@ -32,7 +32,7 @@ Rails.application.routes.draw do
 
       # Watchlist routes
       resources :watchlist, only: [:index]
-      post 'watchlist/:movie_id', to: 'watchlists#toggle'
+      post 'watchlist/:movie_id', to: 'watchlists#create'
 
       # Notification routes
       post 'notifications/device-token', to: 'notifications#update_device_token'
