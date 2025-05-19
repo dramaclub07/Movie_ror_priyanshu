@@ -12,7 +12,7 @@ require 'rswag/specs'
 # Configure SimpleCov
 SimpleCov.start 'rails' do
   enable_coverage :branch
-  
+
   # Coverage groups
   add_group 'Models', 'app/models'
   add_group 'Controllers', 'app/controllers'
@@ -22,14 +22,12 @@ SimpleCov.start 'rails' do
   add_group 'Jobs', 'app/jobs'
   add_group 'Policies', 'app/policies'
   add_group 'Serializers', 'app/serializers'
-  
+
   # Filters
-  add_filter '/test/'
+  add_filter '/spec/'
   add_filter '/config/'
   add_filter '/vendor/'
-  add_filter '/spec/'
-  add_filter '/db/'
-  
+
   # Coverage thresholds
   minimum_coverage line: 80
   minimum_coverage_by_file line: 70
@@ -50,7 +48,12 @@ end
 Rails.application.routes.default_url_options[:host] = 'localhost:3000'
 
 RSpec.configure do |config|
-  config.use_transactional_fixtures = false
+  # Basic configurations
+  config.use_transactional_fixtures = true
+  config.infer_spec_type_from_file_location!
+  config.filter_rails_from_backtrace!
+  config.order = :random
+  config.example_status_persistence_file_path = "tmp/examples.txt"
 
   config.fixture_path = Rails.root.join('spec/fixtures')
 
@@ -61,7 +64,7 @@ RSpec.configure do |config|
   config.before(:suite) do
     DatabaseCleaner.strategy = :transaction
     DatabaseCleaner.clean_with(:truncation)
-    
+
     # Set URL options for ActiveStorage
     ActiveStorage::Current.url_options = { host: 'localhost:3000' }
     Rails.application.routes.default_url_options[:host] = 'localhost:3000'
@@ -90,14 +93,10 @@ RSpec.configure do |config|
   config.include Devise::Test::IntegrationHelpers, type: :request
   config.include Warden::Test::Helpers
 
-  # Include JSON helpers
-  config.include JsonHelper, type: :request
-
-  # Include Auth helpers
-  config.include AuthHelper, type: :request
-
-  # Include Request helpers
-  config.include RequestHelper, type: :request
+  # Remove problematic helpers
+  # 
+  # config.include AuthHelper, type: :request
+  # config.include RequestHelper, type: :request
 
   # Configure JWT token settings
   config.before(:each, type: :request) do
@@ -115,12 +114,6 @@ RSpec.configure do |config|
       default_headers.each { |key, value| header key, value }
     end
   end
-
-  # RSpec settings
-  config.infer_spec_type_from_file_location!
-  config.filter_rails_from_backtrace!
-  config.order = :random
-  config.example_status_persistence_file_path = "tmp/examples.txt"
 
   # Swagger configuration
   config.openapi_root = Rails.root.join('swagger').to_s

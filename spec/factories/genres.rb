@@ -1,5 +1,6 @@
+# spec/factories/genres.rb
 FactoryBot.define do
-    factory :genre do
-    sequence(:name) { |n| "Genre #{n}" }
+  factory :genre do
+    name { Faker::Book.genre }
   end
 end

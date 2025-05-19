@@ -1,6 +1,8 @@
 class AdminUser < ApplicationRecord
-  # Devise modules
+  
   devise :database_authenticatable, :recoverable, :rememberable, :validatable
+
+  after_initialize :set_default_role, if: :new_record?
 
   enum role: { admin: 'admin', supervisor: 'supervisor' }
 
@@ -13,5 +15,11 @@ class AdminUser < ApplicationRecord
 
   def self.ransackable_associations(_auth_object = nil)
     []
+  end
+
+  private
+
+  def set_default_role
+    self.role ||= "admin"
   end
 end

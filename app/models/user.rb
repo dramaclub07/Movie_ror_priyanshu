@@ -1,16 +1,10 @@
 class User < ApplicationRecord
-  devise :database_authenticatable, 
-         :registerable,
-         :recoverable, 
-         :rememberable, 
-         :validatable,
-         :jwt_authenticatable, 
-         :omniauthable, 
-         jwt_revocation_strategy: JwtDenylist,
-         omniauth_providers: [:google_oauth2]
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable,
+         :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
 
   # Enums
-  enum role: { user: 'user', supervisor: 'supervisor', admin: 'admin' }
+  enum role: { user: 'user', supervisor: 'supervisor'}
 
   # Associations
   has_many :subscriptions, dependent: :destroy

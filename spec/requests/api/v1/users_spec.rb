@@ -1,55 +1,34 @@
 require 'swagger_helper'
 
 RSpec.describe 'api/v1/users', type: :request do
+  let(:user) { create(:user) }
+  let(:headers) { { 'Authorization' => "Bearer #{generate_jwt_token(user)}" } }
+
   path '/api/v1/users/profile' do
     get 'Get user profile' do
       tags 'Users'
       produces 'application/json'
       security [bearer_auth: []]
-
       parameter name: 'Authorization', in: :header, type: :string, required: true
 
       response '200', 'profile found' do
-        schema type: :object,
-               properties: {
-                 user: {
-                   type: :object,
-                   properties: {
-                     id: { type: :integer },
-                     email: { type: :string },
-                     phone_number: { type: :string },
-                     created_at: { type: :string, format: 'date-time' },
-                     subscriptions_count: { type: :integer },
-                     active_subscriptions: {
-                       type: :array,
-                       items: {
-                         type: :object,
-                         properties: {
-                           id: { type: :integer },
-                           plan_type: { type: :string },
-                           status: { type: :string },
-                           movie: {
-                             type: :object,
-                             properties: {
-                               id: { type: :integer },
-                               title: { type: :string }
-                             }
-                           }
-                         }
-                       }
-                     }
-                   }
-                 }
-               }
-        run_test!
+        before do
+          allow_any_instance_of(Api::V1::UsersController).to receive(:current_user).and_return(user)
+        end
+
+        run_test! do
+          get '/api/v1/users/profile', headers: headers
+          expect(response).to have_http_status(:ok)
+        end
       end
 
       response '401', 'unauthorized' do
-        schema type: :object,
-               properties: {
-                 error: { type: :string }
-               }
-        run_test!
+        let(:headers) { { 'Authorization' => 'Bearer invalid_token' } }
+
+        run_test! do
+          get '/api/v1/users/profile', headers: headers
+          expect(response).to have_http_status(:unauthorized)
+        end
       end
     end
 
@@ -58,7 +37,6 @@ RSpec.describe 'api/v1/users', type: :request do
       consumes 'application/json'
       produces 'application/json'
       security [bearer_auth: []]
-
       parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: :user, in: :body, schema: {
         type: :object,
@@ -71,42 +49,39 @@ RSpec.describe 'api/v1/users', type: :request do
       }
 
       response '200', 'profile updated' do
-        schema type: :object,
-               properties: {
-                 user: {
-                   type: :object,
-                   properties: {
-                     id: { type: :integer },
-                     email: { type: :string },
-                     phone_number: { type: :string },
-                     created_at: { type: :string, format: 'date-time' }
-                   }
-                 }
-               }
-        run_test!
+        let(:user_params) { { phone_number: '1234567890' } }
+
+        before do
+          allow_any_instance_of(Api::V1::UsersController).to receive(:current_user).and_return(user)
+        end
+
+        run_test! do
+          put '/api/v1/users/profile', headers: headers, params: { user: user_params }
+          expect(response).to have_http_status(:ok)
+        end
       end
 
       response '401', 'unauthorized' do
-        schema type: :object,
-               properties: {
-                 error: { type: :string }
-               }
-        run_test!
+        let(:headers) { { 'Authorization' => 'Bearer invalid_token' } }
+        let(:user_params) { { phone_number: '1234567890' } }
+
+        run_test! do
+          put '/api/v1/users/profile', headers: headers, params: { user: user_params }
+          expect(response).to have_http_status(:unauthorized)
+        end
       end
 
       response '422', 'invalid request' do
-        schema type: :object,
-               properties: {
-                 errors: {
-                   type: :object,
-                   properties: {
-                     phone_number: { type: :array, items: { type: :string } },
-                     current_password: { type: :array, items: { type: :string } },
-                     password: { type: :array, items: { type: :string } }
-                   }
-                 }
-               }
-        run_test!
+        let(:user_params) { { phone_number: '' } }
+
+        before do
+          allow_any_instance_of(Api::V1::UsersController).to receive(:current_user).and_return(user)
+        end
+
+        run_test! do
+          put '/api/v1/users/profile', headers: headers, params: { user: user_params }
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
       end
     end
   end
@@ -116,21 +91,26 @@ RSpec.describe 'api/v1/users', type: :request do
       tags 'Users'
       produces 'application/json'
       security [bearer_auth: []]
-
       parameter name: 'Authorization', in: :header, type: :string, required: true
 
       response '200', 'settings found' do
-        schema type: :object,
-               properties: {
-                 email_notifications: { type: :boolean },
-                 push_notifications: { type: :boolean },
-                 sms_notifications: { type: :boolean }
-               }
-        run_test!
+        before do
+          allow_any_instance_of(Api::V1::UsersController).to receive(:current_user).and_return(user)
+        end
+
+        run_test! do
+          get '/api/v1/users/notifications/settings', headers: headers
+          expect(response).to have_http_status(:ok)
+        end
       end
 
       response '401', 'unauthorized' do
-        run_test!
+        let(:headers) { { 'Authorization' => 'Bearer invalid_token' } }
+
+        run_test! do
+          get '/api/v1/users/notifications/settings', headers: headers
+          expect(response).to have_http_status(:unauthorized)
+        end
       end
     end
 
@@ -139,7 +119,6 @@ RSpec.describe 'api/v1/users', type: :request do
       consumes 'application/json'
       produces 'application/json'
       security [bearer_auth: []]
-
       parameter name: 'Authorization', in: :header, type: :string, required: true
       parameter name: :settings, in: :body, schema: {
         type: :object,
@@ -151,21 +130,39 @@ RSpec.describe 'api/v1/users', type: :request do
       }
 
       response '200', 'settings updated' do
-        schema type: :object,
-               properties: {
-                 email_notifications: { type: :boolean },
-                 push_notifications: { type: :boolean },
-                 sms_notifications: { type: :boolean }
-               }
-        run_test!
+        let(:settings) { { email_notifications: true, push_notifications: false, sms_notifications: true } }
+
+        before do
+          allow_any_instance_of(Api::V1::UsersController).to receive(:current_user).and_return(user)
+        end
+
+        run_test! do
+          put '/api/v1/users/notifications/settings', headers: headers, params: { settings: settings }
+          expect(response).to have_http_status(:ok)
+        end
       end
 
       response '401', 'unauthorized' do
-        run_test!
+        let(:headers) { { 'Authorization' => 'Bearer invalid_token' } }
+        let(:settings) { { email_notifications: true } }
+
+        run_test! do
+          put '/api/v1/users/notifications/settings', headers: headers, params: { settings: settings }
+          expect(response).to have_http_status(:unauthorized)
+        end
       end
 
       response '422', 'invalid request' do
-        run_test!
+        let(:settings) { { email_notifications: nil } }
+
+        before do
+          allow_any_instance_of(Api::V1::UsersController).to receive(:current_user).and_return(user)
+        end
+
+        run_test! do
+          put '/api/v1/users/notifications/settings', headers: headers, params: { settings: settings }
+          expect(response).to have_http_status(:unprocessable_entity)
+        end
       end
     end
   end

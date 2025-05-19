@@ -17,6 +17,6 @@ class Watchlist < ApplicationRecord
   private
 
   def send_notification
-    WatchlistNotificationJob.perform_later(self)
+    ::WatchlistNotificationJob.perform_later(self)
   end
 end

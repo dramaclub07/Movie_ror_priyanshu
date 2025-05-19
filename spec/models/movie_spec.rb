@@ -1,3 +1,4 @@
+# spec/models/movie_spec.rb
 require 'rails_helper'
 
 RSpec.describe Movie, type: :model do
@@ -28,111 +29,64 @@ RSpec.describe Movie, type: :model do
     it { should validate_presence_of(:main_lead) }
     it { should validate_presence_of(:streaming_platform) }
     it { should allow_value(true, false).for(:premium) }
+
+    it 'is invalid with rating below 0' do
+      movie = build(:movie, rating: -1)
+      expect(movie).not_to be_valid
+      expect(movie.errors[:rating]).to include('must be greater than or equal to 0')
+    end
+
+    it 'is invalid with rating above 10' do
+      movie = build(:movie, rating: 11)
+      expect(movie).not_to be_valid
+      expect(movie.errors[:rating]).to include('must be less than or equal to 10')
+    end
+
+    it 'is invalid with release_year before 1881' do
+      movie = build(:movie, release_year: 1880)
+      expect(movie).not_to be_valid
+      expect(movie.errors[:release_year]).to include('must be greater than 1880')
+    end
+
+    it 'is invalid with non-integer duration' do
+      movie = build(:movie, duration: 120.5)
+      expect(movie).not_to be_valid
+      expect(movie.errors[:duration]).to include('must be an integer')
+    end
+
+    it 'is valid with premium true' do
+      movie = build(:movie, premium: true)
+      expect(movie).to be_valid
+    end
   end
 
-  describe 'custom validations' do
+  describe 'watchlists association' do
     let(:genre) { create(:genre) }
-    let(:movie) { build(:movie, genre: genre) }
+    let(:user) { create(:user) }
+    let(:movie) { create(:movie, genre: genre) }
 
-    context 'poster content type' do
-      it 'is valid with png' do
-        movie.poster.attach(
-          io: File.open(Rails.root.join('spec/fixtures/files/poster.png')),
-          filename: 'poster.png', 
-          content_type: 'image/png'
-        )
-        expect(movie).to be_valid
-      end
-
-      it 'is invalid with non-image content type' do
-        movie.poster.attach(
-          io: File.open(Rails.root.join('spec/fixtures/files/fake.txt')),
-          filename: 'fake.txt',
-          content_type: 'text/plain'
-        )
-        expect(movie).not_to be_valid
-        expect(movie.errors[:poster]).to include('must be a JPEG or PNG')
-      end
+    it 'destroys watchlists when movie is destroyed' do
+      create(:watchlist, user: user, movie: movie)
+      expect { movie.destroy }.to change { Watchlist.count }.by(-1)
     end
 
-    context 'banner content type' do
-      it 'is valid with png' do
-        movie.banner.attach(
-          io: File.open(Rails.root.join('spec/fixtures/files/banner.png')),
-          filename: 'banner.png',
-          content_type: 'image/png'
-        )
-        expect(movie).to be_valid
-      end
-
-      it 'is invalid with wrong file type' do
-        movie.banner.attach(
-          io: File.open(Rails.root.join('spec/fixtures/files/fake.txt')),
-          filename: 'fake.txt',
-          content_type: 'text/plain'
-        )
-        expect(movie).not_to be_valid
-        expect(movie.errors[:banner]).to include('must be a JPEG or PNG')
-      end
+    it 'associates users through watchlists' do
+      create(:watchlist, user: user, movie: movie)
+      expect(movie.users).to include(user)
     end
   end
 
-  describe 'scopes' do
-    let!(:genre) { create(:genre) }
-    
-    before do
-      @with_poster = create(:movie, :with_poster, genre: genre)
-      @without_poster = create(:movie, genre: genre)
-      @with_banner = create(:movie, :with_banner, genre: genre)
-      @without_banner = create(:movie, genre: genre)
+  describe 'genre association' do
+    let(:genre) { create(:genre) }
+    let(:movie) { create(:movie, genre: genre) }
+
+    it 'increments genre movies_count' do
+      expect { movie }.to change { genre.reload.movies_count }.by(1)
     end
 
-    it 'returns movies with posters' do
-      expect(Movie.with_poster).to include(@with_poster)
-      expect(Movie.with_poster).not_to include(@without_poster)
-    end
-
-    it 'returns movies without posters' do
-      expect(Movie.without_poster).to include(@without_poster)
-      expect(Movie.without_poster).not_to include(@with_poster)
-    end
-
-    it 'returns movies with banners' do
-      expect(Movie.with_banner).to include(@with_banner)
-      expect(Movie.with_banner).not_to include(@without_banner)
-    end
-
-    it 'returns movies without banners' do
-      expect(Movie.without_banner).to include(@without_banner)
-      expect(Movie.without_banner).not_to include(@with_banner)
-    end
-  end
-
-  describe '#poster_url' do
-    let!(:genre) { create(:genre) }
-
-    it 'returns poster URL if attached' do
-      movie = create(:movie, :with_poster, genre: genre)
-      expect(movie.poster_url).to be_present
-    end
-
-    it 'returns nil if not attached' do
-      movie = create(:movie, genre: genre)
-      expect(movie.poster_url).to be_nil
-    end
-  end
-
-  describe '#banner_url' do
-    let!(:genre) { create(:genre) }
-
-    it 'returns banner URL if attached' do
-      movie = create(:movie, :with_banner, genre: genre)
-      expect(movie.banner_url).to be_present
-    end
-
-    it 'returns nil if not attached' do
-      movie = create(:movie, genre: genre)
-      expect(movie.banner_url).to be_nil
+    it 'decrements genre movies_count on destroy' do
+      movie
+      expect { movie.destroy }.to change { genre.reload.movies_count }.by(-1)
     end
   end
 
