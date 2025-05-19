@@ -12,8 +12,8 @@ Rails.application.routes.draw do
       post 'register', to: 'auth#register'
       post 'login', to: 'auth#login'
       post 'google', to: 'auth#google'
-      post 'refresh-token', to: 'auth#refresh_token'
-      delete 'logout', to: 'auth#logout'
+      post 'auth/refresh', to: 'auth#refresh_token'
+      delete 'auth/logout', to: 'auth#logout'
       get 'profile', to: 'auth#profile'
       put 'profile', to: 'auth#update_profile'
 
@@ -31,9 +31,9 @@ Rails.application.routes.draw do
       end
 
       # Watchlist routes
-      resources :watchlist, only: [:index]
+      get 'watchlist', to: 'watchlists#index'
       post 'watchlist/:movie_id', to: 'watchlists#create'
-      post 'watchlists/toggle/:movie_id', to: 'watchlists#create', as: :watchlist_toggle
+    
 
       # Notification routes
       post 'notifications/device-token', to: 'notifications#update_device_token'

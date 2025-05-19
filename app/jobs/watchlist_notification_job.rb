@@ -1,10 +1,7 @@
-# app/jobs/watchlist_notification_job.rb
 class WatchlistNotificationJob < ApplicationJob
   queue_as :default
-
   def perform(watchlist)
     return unless watchlist.user.notifications_enabled && watchlist.user.device_token.present?
-
     begin
       fcm_service = FcmService.new
       result = fcm_service.send_notification(

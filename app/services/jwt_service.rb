@@ -25,7 +25,6 @@ class JwtService
 
   def self.decode(token)
     Rails.logger.debug("Decoding token: #{token}") if Rails.env.development?
-    # Check blacklist
     if BlacklistedToken.exists?(token: token)
       Rails.logger.warn("Token is blacklisted: #{token}")
       return nil

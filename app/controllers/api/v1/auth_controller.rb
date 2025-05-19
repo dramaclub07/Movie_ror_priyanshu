@@ -226,21 +226,17 @@ module Api
 
       def user_params
         permitted = %i[email password password_confirmation phone_number name]
-        # Convert params to hash to avoid ActionController::Parameters issues
         params_hash = params.to_unsafe_h.with_indifferent_access
         Rails.logger.debug "Raw params: #{params_hash.inspect}"
 
-        # Try params[:user] first, then params[:auth][:user]
         user_params = params_hash[:user] || params_hash.dig(:auth, :user)
         Rails.logger.debug "Extracted user params: #{user_params.inspect}"
 
-        # Ensure user_params is a hash
         unless user_params.is_a?(Hash)
           Rails.logger.error "Invalid user params: #{user_params.inspect}"
           raise ActionController::ParameterMissing, 'user'
         end
 
-        # Convert to ActionController::Parameters for permitting
         ActionController::Parameters.new(user_params).permit(*permitted)
       end
     end

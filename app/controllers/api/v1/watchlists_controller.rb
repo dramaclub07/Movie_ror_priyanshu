@@ -1,4 +1,3 @@
-# app/controllers/api/v1/watchlists_controller.rb
 module Api
   module V1
     class WatchlistsController < ApplicationController
@@ -7,12 +6,8 @@ module Api
 
       def index
         watchlists = Watchlist.for_user(current_user).includes(movie: :genre)
-        movies = watchlists.map(&:movie)
-        render json: ActiveModelSerializers::SerializableResource.new(
-          movies,
-          each_serializer: MovieSerializer,
-          scope: current_user
-        ), status: :ok
+        movies = watchlists.map { |watchlist| watchlist.movie }
+        render json: movies, each_serializer: MovieSerializer, scope: current_user, status: :ok
       end
 
       def create
@@ -26,7 +21,7 @@ module Api
           watchlist = Watchlist.new(user: current_user, movie: @movie)
           begin
             if watchlist.save
-              render json: watchlist, serializer: WatchlistSerializer, status: :created
+              render json: watchlist, serializer: Api::V1::WatchlistSerializer, status: :created
             else
               render json: { error: watchlist.errors.full_messages.first }, status: :unprocessable_entity
             end
