@@ -44,6 +44,11 @@ class Movie < ApplicationRecord
     nil
   end
 
+  def watchlisted_by?(user)
+    return false unless user
+    watchlists.exists?(user_id: user.id)
+  end
+
 
   def banner_url
     return unless banner.attached?

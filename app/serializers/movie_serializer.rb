@@ -12,9 +12,8 @@ class MovieSerializer < ActiveModel::Serializer
   def banner_url
     object.banner_url
   end
-
+  
   def watchlisted
-    user = instance_options[:current_user]
-    user ? object.watchlisted_by?(user) : false
+    scope && object.watchlists.exists?(user_id: scope.id)
   end
 end

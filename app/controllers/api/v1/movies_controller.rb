@@ -11,12 +11,16 @@ module Api
       def index
         movies = Movie.includes(:genre)
         movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
-        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
+        movies = movies.where(genre_id: params[:genre_id]) if params[:search].present?
         movies = movies.where(premium: false) unless current_user&.subscriptions&.active&.where(plan_type: 'premium')&.exists?
         movies = movies.page(params[:page]).per(10)
       
         render json: {
-          movies: ActiveModelSerializers::SerializableResource.new(movies, each_serializer: MovieSerializer),
+          movies: ActiveModelSerializers::SerializableResource.new(
+            movies,
+            each_serializer: MovieSerializer,
+            scope: current_user # Pass current_user to serializer for watchlisted status
+          ),
           meta: {
             current_page: movies.current_page,
             total_pages: movies.total_pages,
@@ -29,7 +33,7 @@ module Api
         if @movie.premium && !current_user&.subscriptions&.active&.where(plan_type: 'premium')&.exists?
           render json: { error: 'Premium subscription required' }, status: :forbidden
         else
-          render json: @movie, serializer: MovieSerializer, status: :ok
+          render json: @movie, serializer: MovieSerializer, scope: current_user, status: :ok # Pass current_user to serializer
         end
       end
 

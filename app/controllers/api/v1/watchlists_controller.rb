@@ -1,4 +1,4 @@
-# app/controllers/api/v1/watchlist_controller.rb
+# app/controllers/api/v1/watchlists_controller.rb
 module Api
   module V1
     class WatchlistsController < ApplicationController
@@ -6,27 +6,43 @@ module Api
       before_action :set_movie, only: [:create]
 
       def index
-        movies = current_user.watchlist_movies.includes(:genre)
-        render json: movies, each_serializer: MovieSerializer, status: :ok
+        watchlists = Watchlist.for_user(current_user).includes(movie: :genre)
+        movies = watchlists.map(&:movie)
+        render json: ActiveModelSerializers::SerializableResource.new(
+          movies,
+          each_serializer: MovieSerializer,
+          scope: current_user
+        ), status: :ok
       end
 
       def create
-        watchlist = current_user.watchlists.find_or_initialize_by(movie_id: params[:movie_id])
-        if watchlist.persisted?
+        return render json: { error: 'Movie not found' }, status: :not_found unless @movie
+
+        watchlist = Watchlist.find_by(user: current_user, movie: @movie)
+        if watchlist
           watchlist.destroy
           render json: { message: 'Movie removed from watchlist' }, status: :ok
         else
-          watchlist.save!
-          render json: watchlist, status: :created
+          watchlist = Watchlist.new(user: current_user, movie: @movie)
+          begin
+            if watchlist.save
+              render json: watchlist, serializer: WatchlistSerializer, status: :created
+            else
+              render json: { error: watchlist.errors.full_messages.first }, status: :unprocessable_entity
+            end
+          rescue StandardError => e
+            Rails.logger.error "Failed to create watchlist: #{e.message}"
+            render json: { error: 'Failed to add movie to watchlist' }, status: :internal_server_error
+          end
         end
       end
 
       private
 
       def set_movie
-        @movie = Movie.find(params[:movie_id])
+        @movie = Movie.find_by(id: params[:movie_id])
       rescue ActiveRecord::RecordNotFound
-        render json: { error: 'Movie not found' }, status: :not_found
+        @movie = nil
       end
     end
   end

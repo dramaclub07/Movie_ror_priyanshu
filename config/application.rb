@@ -22,6 +22,7 @@ module MovieExplorerApp
     config.autoload_paths += %W[#{config.root}/app/services #{config.root}/lib]
     config.autoload_lib(ignore: %w[assets tasks active_admin.bak])
     config.assets.enabled = true # Ensure Sprockets is enabled
+    config.autoload_paths += %W(#{config.root}/app/jobs)
 
     # Configuration for the application, engines, and railties goes here.
     #
