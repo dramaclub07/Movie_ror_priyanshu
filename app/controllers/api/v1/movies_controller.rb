@@ -1,4 +1,3 @@
-# app/controllers/api/v1/movies_controller.rb
 module Api
   module V1
     class MoviesController < ApplicationController
@@ -8,16 +7,16 @@ module Api
       before_action :set_movie, only: %i[show update destroy]
 
       def index
-        movies = Movie.includes(:genre)
+        movies = Movie.includes(:genre, :watchlists)
         movies = movies.where('title ILIKE ?', "%#{params[:search]}%") if params[:search].present?
-        movies = movies.where(genre_id: params[:genre_id]) if params[:search].present?
+        movies = movies.where(genre_id: params[:genre_id]) if params[:genre_id].present?
         movies = movies.page(params[:page]).per(10)
-      
+
         render json: {
           movies: ActiveModelSerializers::SerializableResource.new(
             movies,
             each_serializer: MovieSerializer,
-            scope: current_user 
+            scope: current_user
           ),
           meta: {
             current_page: movies.current_page,
@@ -31,7 +30,7 @@ module Api
         if @movie.premium && !current_user&.subscriptions&.active&.where(plan_type: 'premium')&.exists?
           render json: { error: 'Premium subscription required' }, status: :forbidden
         else
-          render json: @movie, serializer: MovieSerializer, scope: current_user, status: :ok 
+          render json: @movie, serializer: MovieSerializer, scope: current_user, status: :ok
         end
       end
 
@@ -102,10 +101,6 @@ module Api
 
         Rails.logger.warn "Authorization failed for user #{current_user&.id}: role=#{current_user&.role}"
         render json: { error: 'Unauthorized' }, status: :unauthorized
-      end
-
-      def restrict_premium_content
-        # Handled in index and show actions
       end
 
       def notify_new_movie(movie)

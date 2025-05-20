@@ -52,21 +52,22 @@ RSpec.describe Subscription, type: :model do
     end
   end
 
-  describe 'scopes' do
-    before do
-      @active = create(:subscription, user: user, status: 'active')
-      @cancelled = create(:subscription, user: user, status: 'cancelled', end_date: Date.today)
-      @premium = create(:subscription, user: user, plan_type: 'premium')
-    end
-
-    it 'returns only active subscriptions' do
-      expect(Subscription.active).to include(@active)
-      expect(Subscription.active).not_to include(@cancelled)
-    end
-
-    it 'returns only premium subscriptions' do
-      expect(Subscription.premium).to include(@premium)
-      expect(Subscription.premium).not_to include(@cancelled)
+    describe 'scopes' do
+      before do
+        @premium = create(:subscription, user: user, plan_type: 'premium', status: 'active')
+        @basic = create(:subscription, user: user, plan_type: 'basic', status: 'active')
+        @cancelled = create(:subscription, user: user, status: 'cancelled', end_date: 1.day.from_now)
+      end
+  
+      it 'returns only premium subscriptions' do
+        expect(Subscription.premium).to include(@premium)
+        expect(Subscription.premium).not_to include(@basic, @cancelled)
+      end
+  
+      it 'returns only active subscriptions' do
+        expect(Subscription.active).to include(@premium, @basic)
+        expect(Subscription.active).not_to include(@cancelled)
+      end
     end
   end
 end
