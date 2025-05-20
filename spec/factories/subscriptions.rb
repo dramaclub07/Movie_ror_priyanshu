@@ -1,10 +1,10 @@
-# spec/factories/subscriptions.rb
 FactoryBot.define do
   factory :subscription do
-    user                           
-    plan_type { 'basic' }           
-    status { 'active' }             
-    start_date { Date.today }
-    end_date { Date.today + 1.month }
+    user
+    plan_type { 'basic' }
+    status { 'active' }
+    stripe_subscription_id { "sub_#{SecureRandom.hex(10)}" }
+    start_date { Time.current }
+    end_date { 1.month.from_now }
   end
 end

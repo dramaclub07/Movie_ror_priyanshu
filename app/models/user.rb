@@ -3,15 +3,12 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          :jwt_authenticatable, jwt_revocation_strategy: JwtDenylist
 
-  # Enums
   enum role: { user: 'user', supervisor: 'supervisor'}
 
-  # Associations
   has_many :subscriptions, dependent: :destroy
   has_many :watchlists, dependent: :destroy
   has_many :watchlist_movies, through: :watchlists, source: :movie
 
-  # Validations
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true
   validates :phone_number, presence: true, uniqueness: true,
@@ -19,7 +16,6 @@ class User < ApplicationRecord
   validates :stripe_customer_id, uniqueness: true, allow_nil: true
   validates :role, presence: true, inclusion: { in: %w[user admin supervisor] }
 
-  # Callbacks
   before_validation :set_default_role, on: :create
 
   def self.from_omniauth(auth)

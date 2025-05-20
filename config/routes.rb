@@ -13,7 +13,7 @@ Rails.application.routes.draw do
       post 'login', to: 'auth#login'
       post 'google', to: 'auth#google'
       post 'auth/refresh', to: 'auth#refresh_token'
-      delete 'auth/logout', to: 'auth#logout'
+      delete 'logout', to: 'auth#logout'
       get 'profile', to: 'auth#profile'
       put 'profile', to: 'auth#update_profile'
 
@@ -24,7 +24,7 @@ Rails.application.routes.draw do
       resources :movies, only: [:index, :show, :create, :update, :destroy]
 
       # Subscription routes
-      resources :subscriptions, only: [:index, :show, :create] do
+      resources :subscriptions, only: [:index, :show, :create, :update] do
         get 'success', on: :collection
         get 'cancel', on: :collection
         get 'active', on: :collection
