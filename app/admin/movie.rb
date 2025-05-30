@@ -1,6 +1,6 @@
 ActiveAdmin.register Movie do
   permit_params :title, :genre, :release_year, :director, :duration, :description, :premium, :poster, :banner,
-                :main_lead, :rating, :streaming_platform
+                :main_lead, :rating, :streaming_platform, :trailer
 
   index do
     selectable_column
@@ -15,6 +15,13 @@ ActiveAdmin.register Movie do
     column :main_lead
     column :streaming_platform
     column :rating
+    column :trailer do |movie|
+      if movie.trailer.present?
+        link_to "Trailer", movie.trailer, target: "_blank", rel: "noopener"
+      else
+        "No Trailer"
+      end
+    end
     column :poster do |movie|
       if movie.poster.attached?
         image_tag cl_image_path(movie.poster.key, width: 100, crop: :fill), alt: 'Poster'
@@ -47,6 +54,8 @@ ActiveAdmin.register Movie do
   filter :main_lead
   filter :streaming_platform
   filter :rating
+  filter :trailer
+
 
   form do |f|
     f.inputs do
@@ -60,6 +69,7 @@ ActiveAdmin.register Movie do
       f.input :main_lead
       f.input :streaming_platform
       f.input :rating
+      f.input :trailer
       f.input :poster, as: :file
       f.input :banner, as: :file
     end

@@ -54,7 +54,7 @@ module Api
       end
 
       def authorize_supervisor!
-        return if current_user&.supervisor? || current_user&.admin?
+        return if current_user&.supervisor?
 
         render json: { error: 'Unauthorized access' }, status: :forbidden
       end

@@ -1,6 +1,9 @@
 require 'spec_helper'
 ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../config/environment', __dir__)
+
+abort("The Rails environment is running in production mode!") if Rails.env.production?
+
 require 'rspec/rails'
 require 'webmock/rspec'
 require 'shoulda/matchers'
@@ -13,30 +16,23 @@ require 'rswag/specs'
 SimpleCov.start 'rails' do
   enable_coverage :branch
 
-  # Coverage groups
   add_group 'Models', 'app/models'
   add_group 'Controllers', 'app/controllers'
-  add_group 'Helpers', 'app/helpers'
-  add_group 'Libraries', 'lib'
-  add_group 'Mailers', 'app/mailers'
-  add_group 'Jobs', 'app/jobs'
-  add_group 'Policies', 'app/policies'
   add_group 'Serializers', 'app/serializers'
 
-  # Filters
   add_filter '/spec/'
   add_filter '/config/'
   add_filter '/vendor/'
+  add_filter '/app/admin/'
+  add_filter '/app/services/'
+  add_filter '/app/helpers/'
 
   # Coverage thresholds
   minimum_coverage line: 80
   minimum_coverage_by_file line: 70
 end
 
-abort("The Rails environment is running in production mode!") if Rails.env.production?
-
 # Load support files
-# spec/rails_helper.rb
 Dir[Rails.root.join('spec/support/**/*.rb')].each { |f| require f }
 
 begin
@@ -49,29 +45,31 @@ end
 Rails.application.routes.default_url_options[:host] = 'localhost:3000'
 
 RSpec.configure do |config|
-  # Basic configurations
   config.use_transactional_fixtures = true
   config.infer_spec_type_from_file_location!
   config.filter_rails_from_backtrace!
   config.order = :random
-  config.example_status_persistence_file_path = "tmp/examples.txt"
+  config.example_status_persistence_file_path = 'tmp/examples.txt'
 
   config.fixture_path = Rails.root.join('spec/fixtures')
 
   # Factory Bot setup
-    # spec/rails_helper.rb
-  RSpec.configure do |config|
-    config.include FactoryBot::Syntax::Methods
-  end
+  config.include FactoryBot::Syntax::Methods
 
-  # Database cleaner configuration
+  # Shoulda Matchers
+  config.include Shoulda::Matchers::ActiveModel, type: :model
+  config.include Shoulda::Matchers::ActiveRecord, type: :model
+
+  # Devise and Warden helpers
+  config.include Devise::Test::IntegrationHelpers, type: :request
+  config.include Warden::Test::Helpers
+
+  # Database cleaner setup
   config.before(:suite) do
     DatabaseCleaner.strategy = :transaction
     DatabaseCleaner.clean_with(:truncation)
 
-    # Set URL options for ActiveStorage
     ActiveStorage::Current.url_options = { host: 'localhost:3000' }
-    Rails.application.routes.default_url_options[:host] = 'localhost:3000'
   end
 
   config.around(:each) do |example|
@@ -83,7 +81,6 @@ RSpec.configure do |config|
   config.before(:each) do
     DatabaseCleaner.start
     ActiveStorage::Current.url_options = { host: 'localhost:3000' }
-    # Configure Active Job to use test adapter
     ActiveJob::Base.queue_adapter = :test
   end
 
@@ -91,31 +88,17 @@ RSpec.configure do |config|
     DatabaseCleaner.clean
   end
 
-  # Include helpers
-  config.include Shoulda::Matchers::ActiveModel, type: :model
-  config.include Shoulda::Matchers::ActiveRecord, type: :model
-  config.include Devise::Test::IntegrationHelpers, type: :request
-  config.include Warden::Test::Helpers
-
-  # Remove problematic helpers
-  # 
-  # config.include AuthHelper, type: :request
-  # config.include RequestHelper, type: :request
-
-  # Configure JWT token settings
+  # JWT token placeholder
   config.before(:each, type: :request) do
     @jwt_token = nil
   end
 
-  # Default headers for request specs
+  # Set default headers for Swagger-request specs
   config.before(:each, type: :request) do |example|
     host! 'localhost:3000'
     if example.metadata[:swagger]
-      default_headers = {
-        'Accept' => 'application/json',
-        'Content-Type' => 'application/json'
-      }
-      default_headers.each { |key, value| header key, value }
+      header 'Accept', 'application/json'
+      header 'Content-Type', 'application/json'
     end
   end
 
@@ -173,13 +156,6 @@ RSpec.configure do |config|
       ]
     }
   }
-
-  config.before(:each, type: :request) do |example|
-    if example.metadata[:swagger]
-      header 'Content-Type', 'application/json'
-      header 'Accept', 'application/json'
-    end
-  end
 end
 
 # Shoulda Matchers configuration

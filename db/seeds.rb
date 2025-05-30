@@ -5,7 +5,7 @@ def seed_users
   user.update!(
     name: 'Priyanshu Singh',
     password: 'password',
-    phone_number: '9099999999',
+    phone_number: '7900477777',
     role: 'supervisor'
   )
 
@@ -13,7 +13,7 @@ def seed_users
 end
 
 def seed_admin_user
-  if Rails.env.development?
+  if Rails.env.production?
     AdminUser.find_or_create_by!(email: 'admin@example.com') do |admin|
       admin.password = 'password'
       admin.password_confirmation = 'password'

@@ -24,6 +24,7 @@ class Movie < ApplicationRecord
 
   validate :poster_content_type, if: :poster_attached?
   validate :banner_content_type, if: :banner_attached?
+  validates :trailer, format: { with: URI::DEFAULT_PARSER.make_regexp(%w[http https]), allow_blank: true }
 
   # Scopes for filtering by poster and banner presence
   scope :with_poster, -> { where.associated(:poster_attachment) }
@@ -40,7 +41,7 @@ class Movie < ApplicationRecord
                 blob.content_type.present?
     poster.service.url(blob.key, eager: true)
   rescue ArgumentError => e
-    Rails.logger.warn("⚠️ Poster URL error for Movie #{id}: #{e.message}")
+    Rails.logger.warn("Poster URL error for Movie #{id}: #{e.message}")
     nil
   end
 
@@ -58,7 +59,7 @@ class Movie < ApplicationRecord
                 blob.content_type.present?
     banner.service.url(blob.key, eager: true)
   rescue ArgumentError => e
-    Rails.logger.warn("⚠️ Banner URL error for Movie #{id}: #{e.message}")
+    Rails.logger.warn("Banner URL error for Movie #{id}: #{e.message}")
     nil
   end
 

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_05_18_135120) do
+ActiveRecord::Schema[7.1].define(version: 2025_05_30_105715) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -110,6 +110,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_05_18_135120) do
     t.string "main_lead"
     t.string "streaming_platform"
     t.boolean "premium", default: true
+    t.string "trailer"
     t.index ["genre_id"], name: "index_movies_on_genre_id"
     t.index ["release_year"], name: "index_movies_on_release_year"
     t.index ["title"], name: "index_movies_on_title"

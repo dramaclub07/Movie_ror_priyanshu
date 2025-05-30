@@ -1,6 +1,6 @@
 class Genre < ApplicationRecord
   # Associations
-  has_many :movies
+  has_many :movies, dependent: :destroy
 
   # Validations
   validates :name, presence: true, uniqueness: true

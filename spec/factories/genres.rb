@@ -1,6 +1,6 @@
 # spec/factories/genres.rb
 FactoryBot.define do
   factory :genre do
-    name { Faker::Book.genre }
+    sequence(:name) { |n| "Genre#{n}-#{Faker::Book.genre}" }
   end
 end

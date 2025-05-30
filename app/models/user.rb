@@ -14,7 +14,7 @@ class User < ApplicationRecord
   validates :phone_number, presence: true, uniqueness: true,
                            format: { with: /\A[6789]\d{9}\z/, message: 'must be a valid 10-digit Indian phone number starting with 6, 7, 8, or 9' }
   validates :stripe_customer_id, uniqueness: true, allow_nil: true
-  validates :role, presence: true, inclusion: { in: %w[user admin supervisor] }
+  validates :role, presence: true, inclusion: { in: %w[user supervisor] }
 
   before_validation :set_default_role, on: :create
 

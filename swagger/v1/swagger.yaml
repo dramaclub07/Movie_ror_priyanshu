@@ -4,7 +4,7 @@
 #   version: v1
 #   description: API for managing movies, genres, subscriptions, watchlists, and user authentication.
 #   contact:
-#     name: Support Team
+#     name: MovieExplorer- Team II
 # servers:
 #   - url: https://movie-ror-priyanshu-singh.onrender.com
 #     description: Production server
@@ -571,6 +571,9 @@
 #                         type: integer
 #                       total_count:
 #                         type: integer
+#                 required:
+#                   - movies
+#                   - meta
 #         '500':
 #           description: Server error
 #           content:
@@ -614,6 +617,9 @@
 #                 movie[main_lead]:
 #                   type: string
 #                   example: Leonardo DiCaprio
+#                 movie[streaming_platform]:
+#                   type: string
+#                   example: Netflix
 #                 movie[premium]:
 #                   type: boolean
 #                   example: true
@@ -738,6 +744,8 @@
 #                   type: string
 #                 movie[main_lead]:
 #                   type: string
+#                 movie[streaming_platform]:
+#                   type: string
 #                 movie[premium]:
 #                   type: boolean
 #                 movie[poster]:
@@ -752,41 +760,7 @@
 #           content:
 #             application/json:
 #               schema:
-#                 type: object
-#                 properties:
-#                   id:
-#                     type: integer
-#                   title:
-#                     type: string
-#                   release_year:
-#                     type: integer
-#                   rating:
-#                     type: number
-#                     format: float
-#                   genre:
-#                     $ref: '#/components/schemas/Genre'
-#                   director:
-#                     type: string
-#                   duration:
-#                     type: integer
-#                   description:
-#                     type: string
-#                   main_lead:
-#                     type: string
-#                   premium:
-#                     type: boolean
-#                   poster_url:
-#                     type: string
-#                     description: Cloudinary-generated poster URL
-#                   banner_url:
-#                     type: string
-#                     description: Cloudinary-generated banner URL
-#                   created_at:
-#                     type: string
-#                     format: date-time
-#                   updated_at:
-#                     type: string
-#                     format: date-time
+#                 $ref: '#/components/schemas/Movie'
 #         '401':
 #           description: Unauthorized
 #           content:
@@ -1320,6 +1294,13 @@
 #             - premium
 #           nullable: true
 #           description: The user's active subscription plan
+#       required:
+#         - id
+#         - email
+#         - name
+#         - role
+#         - created_at
+#         - updated_at
 #     AuthInfo:
 #       type: object
 #       properties:
@@ -1364,6 +1345,12 @@
 #               type: boolean
 #             same_site:
 #               type: string
+#       required:
+#         - status
+#         - token_type
+#         - access_token
+#         - refresh_token
+#         - cookie_info
 #     Genre:
 #       type: object
 #       properties:
@@ -1377,6 +1364,11 @@
 #         updated_at:
 #           type: string
 #           format: date-time
+#       required:
+#         - id
+#         - name
+#         - created_at
+#         - updated_at
 #     Movie:
 #       type: object
 #       properties:
@@ -1399,13 +1391,19 @@
 #           type: string
 #         main_lead:
 #           type: string
+#         streaming_platform:
+#           type: string
+#           nullable: true
+#           description: The streaming platform where the movie is available
 #         premium:
 #           type: boolean
 #         poster_url:
 #           type: string
+#           nullable: true
 #           description: Cloudinary-generated poster URL
 #         banner_url:
 #           type: string
+#           nullable: true
 #           description: Cloudinary-generated banner URL
 #         created_at:
 #           type: string
@@ -1415,8 +1413,19 @@
 #           format: date-time
 #         watchlisted:
 #           type: boolean
-#           description: Indicates if the movie is in the authenticated user's watchlist
-#           example: true
+#           description: Indicates if the movie is in the authenticated user's watchlist; false if user is not authenticated
+#           example: false
+#       required:
+#         - id
+#         - title
+#         - release_year
+#         - rating
+#         - genre
+#         - duration
+#         - premium
+#         - created_at
+#         - updated_at
+#         - watchlisted
 #     Subscription:
 #       type: object
 #       properties:
@@ -1432,7 +1441,7 @@
 #           enum:
 #             - pending
 #             - active
-#             - inactive
+#             - cancelled
 #         start_date:
 #           type: string
 #           format: date
@@ -1451,6 +1460,13 @@
 #         updated_at:
 #           type: string
 #           format: date-time
+#       required:
+#         - id
+#         - plan_type
+#         - status
+#         - start_date
+#         - created_at
+#         - updated_at
 #     Watchlist:
 #       type: object
 #       properties:
@@ -1466,6 +1482,12 @@
 #         updated_at:
 #           type: string
 #           format: date-time
+#       required:
+#         - id
+#         - user_id
+#         - movie_id
+#         - created_at
+#         - updated_at
 #     AuthResponse:
 #       type: object
 #       properties:
@@ -1476,12 +1498,18 @@
 #         message:
 #           type: string
 #           example: User registered successfully
+#       required:
+#         - user
+#         - auth_info
+#         - message
 #     ErrorResponse:
 #       type: object
 #       properties:
 #         error:
 #           type: string
 #           example: An error occurred
+#       required:
+#         - error
 #     ValidationErrorResponse:
 #       type: object
 #       properties:
@@ -1489,10 +1517,10 @@
 #           type: array
 #           items:
 #             type: string
+#       required:
+#         - errors
 # security:
 #   - BearerAuth: []
-
-
 openapi: 3.0.1
 info:
   title: Movie Explorer API
@@ -2124,6 +2152,10 @@ paths:
                 movie[banner]:
                   type: string
                   format: binary
+                movie[trailer]:
+                  type: string
+                  example: https://www.youtube.com/watch?v=YoHD9XEInc0
+                  description: URL to the movie trailer (e.g., YouTube link)
               required:
                 - movie[title]
                 - movie[release_year]
@@ -2249,6 +2281,10 @@ paths:
                 movie[banner]:
                   type: string
                   format: binary
+                movie[trailer]:
+                  type: string
+                  example: https://www.youtube.com/watch?v=YoHD9XEInc0
+                  description: URL to the movie trailer (e.g., YouTube link)
       responses:
         '200':
           description: Movie updated successfully
@@ -2418,7 +2454,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Stripe configuration error
+          description: Server error
           content:
             application/json:
               schema:
@@ -2900,6 +2936,10 @@ components:
           type: string
           nullable: true
           description: Cloudinary-generated banner URL
+        trailer:
+          type: string
+          nullable: true
+          description: URL to the movie trailer (e.g., YouTube link)
         created_at:
           type: string
           format: date-time

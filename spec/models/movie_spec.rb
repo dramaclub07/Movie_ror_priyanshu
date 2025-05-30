@@ -55,7 +55,8 @@ RSpec.describe Movie, type: :model do
     end
 
     it 'is valid with premium true' do
-      movie = build(:movie, premium: true)
+      genre = create(:genre)
+      movie = build(:movie, premium: true, genre: genre)
       expect(movie).to be_valid
     end
   end
@@ -99,6 +100,13 @@ RSpec.describe Movie, type: :model do
   describe '.ransackable_associations' do
     it 'returns expected associations' do
       expect(Movie.ransackable_associations).to match_array(%w[subscriptions users genre])
+    end
+  end
+
+  describe '#watchlisted_by?' do
+    let(:movie) { build(:movie) }
+    it 'returns false if no user' do
+      expect(movie.watchlisted_by?(nil)).to be false
     end
   end
 end
