@@ -8,9 +8,12 @@ class AdminUser < ApplicationRecord
 
   validates :role, inclusion: { in: roles.keys }, allow_nil: true
 
+  # def self.ransackable_attributes(_auth_object = nil)
+  #   %w[id email encrypted_password reset_password_token reset_password_sent_at remember_created_at role created_at
+  #      updated_at trailer]
+  # end
   def self.ransackable_attributes(_auth_object = nil)
-    %w[id email encrypted_password reset_password_token reset_password_sent_at remember_created_at role created_at
-       updated_at]
+    %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium trailer created_at updated_at]
   end
 
   def self.ransackable_associations(_auth_object = nil)

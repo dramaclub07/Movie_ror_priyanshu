@@ -65,8 +65,7 @@ class Movie < ApplicationRecord
 
 
   def self.ransackable_attributes(_auth_object = nil)
-    %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium
-       created_at updated_at]
+    %w[id title release_year rating genre_id director duration description main_lead streaming_platform premium trailer created_at updated_at]
   end
 
   def self.ransackable_associations(_auth_object = nil)
